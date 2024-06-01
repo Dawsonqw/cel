@@ -11,3 +11,11 @@ TODO:
 - [ ] 3. 实现一个简单的优化器，利用mlir实现计算优化
 - [ ] 4. 实现一个简单的后端，将LLVM IR编译为目标代码
 - [ ] 5. 实现一个简单的运行时，运行目标代码
+
+
+<!-- 依赖安装 shell -->
+# 依赖安装
+```shell
+# 安装flex biasion
+apt install flex bison -y
+```
