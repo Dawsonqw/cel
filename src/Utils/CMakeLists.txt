@@ -1,18 +1,14 @@
 file(GLOB _sources
-          CelOps.cpp
+          common.cpp
     )
 
-add_mlir_library(CelBasic
+add_mlir_library(CelSupport
     ${_sources}
     ADDITIONAL_HEADER_DIRS
     ${PROJECT_SOURCE_DIR}/include
 
     DEPENDS
-    cel_dialect_gen
 
     LINK_LIBS PRIVATE
-    MLIR
-    MLIRCallInterfaces
-    MLIRFunctionInterfaces
     glog::glog
 )

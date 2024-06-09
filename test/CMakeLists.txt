@@ -1,5 +1,7 @@
 set(LIBS
     CelBasic
+    CelSupport
+    glog::glog
 )
 
 set(DEPEND

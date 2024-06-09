@@ -51,6 +51,27 @@ def FuncOp : Cel_Op<"func", [
   }];
 }
 
+
+
+def ReturnOp : Cel_Op<"return", [Pure, HasParent<"FuncOp">,
+                                 Terminator]> {
+  let summary = "return operation";
+  let description = [{
+  }];
+
+  let arguments = (ins Variadic<AnyType>:$input);
+
+  let builders = [
+    OpBuilder<(ins), [{ build($_builder, $_state, std::nullopt); }]>
+  ];
+
+  let extraClassDeclaration = [{
+    bool hasOperand() { return getNumOperands() != 0; }
+  }];
+
+  // let hasVerifier = 1;
+}
+
 def CallOp : Cel_Op<"call",
     [DeclareOpInterfaceMethods<CallOpInterface>]> {
   let summary = "generic call operation";
@@ -61,7 +82,6 @@ def CallOp : Cel_Op<"call",
 
   let results = (outs AnyType: $Cel_Type);
 
-  // Add custom build methods for the generic call operation.
   let builders = [
     OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments)>
   ];
