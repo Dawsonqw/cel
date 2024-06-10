@@ -51,8 +51,6 @@ def FuncOp : Cel_Op<"func", [
   }];
 }
 
-
-
 def ReturnOp : Cel_Op<"return", [Pure, HasParent<"FuncOp">,
                                  Terminator]> {
   let summary = "return operation";
@@ -82,9 +80,9 @@ def CallOp : Cel_Op<"call",
 
   let results = (outs AnyType: $Cel_Type);
 
-  let builders = [
-    OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments)>
-  ];
+  // let builders = [
+  //   OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments)>
+  // ];
 }
 
 def DataOp: Cel_Op<"Data"> {

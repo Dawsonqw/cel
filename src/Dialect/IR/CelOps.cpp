@@ -1,19 +1,22 @@
-#include "mlir/InitAllDialects.h"
-
 #include "Dialect/IR/CelOps.hpp"
 
 using namespace mlir;
-using namespace mlir::cel;
 
-#include "Dialect/IR/CelDialect.cpp.inc"
+namespace mlir{
+    namespace cel{
+        ::mlir::Operation::operand_range CallOp::getArgOperands(){
+            
+        }
 
-void CelDialect::initialize()
-{
-    addOperations<
-#define GET_OP_LIST
-#include "Dialect/IR/CelOps.cpp.inc"
-        >();
+        ::mlir::MutableOperandRange CallOp::getArgOperandsMutable(){
+
+        }
+        
+        void CallOp::setCalleeFromCallable(::mlir::CallInterfaceCallable callee){
+        }
+
+        ::mlir::CallInterfaceCallable CallOp::getCallableForCallee(){
+
+        }
+    }
 }
-
-#define GET_OP_CLASSES
-#include "Dialect/IR/CelOps.cpp.inc"

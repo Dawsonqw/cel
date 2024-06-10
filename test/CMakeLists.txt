@@ -2,6 +2,21 @@ set(LIBS
     CelBasic
     CelSupport
     glog::glog
+    MLIRAnalysis
+    MLIRBuiltinToLLVMIRTranslation
+    MLIRCallInterfaces
+    MLIRCastInterfaces
+    MLIRExecutionEngine
+    MLIRFunctionInterfaces
+    MLIRIR
+    MLIRLLVMCommonConversion
+    MLIRLLVMToLLVMIRTranslation
+    MLIRMemRefDialect
+    MLIRParser
+    MLIRPass
+    MLIRSideEffectInterfaces
+    MLIRTargetLLVMIRExport
+    MLIRTransforms
 )
 
 set(DEPEND
