@@ -26,3 +26,19 @@ set(DEPEND
 add_executable(test_opt test_opt.cpp)
 add_dependencies(test_opt ${DEPEND})
 target_link_libraries(test_opt PRIVATE ${LIBS})
+
+
+add_executable(test_parser test_parser.cpp)
+
+add_executable(test_val test_val.cpp)
+
+
+# unit tests
+set(
+    TESTLIB
+    ${GTEST_BOTH_LIBRARIES}
+    onnx_parser
+)
+add_executable(test_attribute test_attribute.cpp)
+target_link_libraries(test_attribute PRIVATE ${TESTLIB})
+

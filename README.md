@@ -18,4 +18,12 @@ TODO:
 ```shell
 # 安装flex biasion
 apt install flex bison -y
+
+# protobuf 
+apt-get install -y libprotobuf-dev protobuf-compiler
+
+# onnx.proto
+url=https://github.com/onnx/onnx/blob/main/onnx/onnx.proto
+# 产生onnx.pb.h onnx.pb.cc
+protoc --cpp_out=./ onnx.proto
 ```
