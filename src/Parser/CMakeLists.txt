@@ -5,6 +5,7 @@ file(GLOB _sources
           node.cc
           model.cc
           attribute.cc
+          tensor.cc
     )
 
 add_library(onnx_parser STATIC ${_sources})

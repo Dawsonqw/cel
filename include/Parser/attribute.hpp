@@ -13,10 +13,9 @@ namespace cel{
             Attribute()=default;
             virtual ~Attribute()=default;
 
-            Attribute(const Attribute&)=delete;
-            Attribute& operator=(const Attribute&)=delete;
-
             void insert(const std::string& key,const std::any& value);
+
+            void insert(std::pair<std::string,std::any>&& pair);
 
             std::any& find(const std::string& key);
 

@@ -5,7 +5,13 @@ namespace cel{
         m_attributes[key]=value;
     }
 
-    std::any& Attribute::operator[](const std::string& key){
+    void Attribute::insert(std::pair<std::string, std::any> &&pair)
+    {
+        m_attributes[pair.first]=pair.second;
+    }
+
+    std::any &Attribute::operator[](const std::string &key)
+    {
         if(m_attributes.find(key)==m_attributes.end()){
             m_attributes[key]=std::any();
         }

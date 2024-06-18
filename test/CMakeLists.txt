@@ -42,3 +42,5 @@ set(
 add_executable(test_attribute test_attribute.cpp)
 target_link_libraries(test_attribute PRIVATE ${TESTLIB})
 
+add_executable(test_node test_node.cpp)
+target_link_libraries(test_node PRIVATE ${TESTLIB})
