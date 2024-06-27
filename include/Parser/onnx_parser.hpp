@@ -3,11 +3,13 @@
 
 #include "onnx.pb.h"
 #include "parser.hpp"
+#include "model.hpp"
 
 namespace cel{
     class OnnxParser: public Parser{    
         public:
-            OnnxParser(const std::string& file_name):Parser(file_name){}
+            using Parser::Parser;
+
             ~OnnxParser()=default;
 
             OnnxParser(const OnnxParser&)=delete;
@@ -17,6 +19,7 @@ namespace cel{
 
         private:
             onnx::ModelProto m_model;
+            Model m_cel_model;
     };
 }
 

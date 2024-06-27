@@ -2,16 +2,29 @@ cmake_minimum_required(VERSION 3.20)
 project(cel)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_COMPILER "g++")
 set(CMAKE_BUILD_TYPE "Debug")
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+
+
 find_package(LLVM REQUIRED CONFIG)
 find_package(MLIR REQUIRED CONFIG)
 find_package (glog 0.7.0 REQUIRED)
 find_package(GTest)
+find_package(Protobuf REQUIRED)
+ 
+if (Protobuf_FOUND)
+    MESSAGE(STATUS "PROTOBUF FOUNED, ${PROTOBUF_INCLUDE_DIR}")
+    INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIR})
+    link_directories(${PROTOBUF_LIBRARIES})
+else (Protobuf_FOUND)
+    MESSAGE(FATAL_ERROR "PROTOBUF NOT FOUNED")
+endif (Protobuf_FOUND)
 
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")

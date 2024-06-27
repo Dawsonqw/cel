@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace cel{
-    template<typename T=float>
+    template<typename T=double>
     class Tensor{
         public:
             explicit Tensor(T* raw_ptr, int32_t size);
@@ -298,61 +298,16 @@ void cel::Tensor<T>::Flatten(bool row_major) {
   this->Reshape({size}, row_major);
 }
 
-template <>
-void cel::Tensor<float>::RandN(float mean, float var) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  std::random_device rd;
-  std::mt19937 mt(rd());
-
-  std::normal_distribution<float> dist(mean, var);
-  for (size_t i = 0; i < this->size(); ++i) {
-    this->index(i) = dist(mt);
-  }
+template <typename T>
+void cel::Tensor<T>::RandN(T mean, T var)
+{
 }
 
-template <>
-void cel::Tensor<int32_t>::RandU(int32_t min, int32_t max) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  std::random_device rd;
-  std::mt19937 mt(rd());
-
-  std::uniform_int_distribution<int32_t> dist(min, max);
-  for (size_t i = 0; i < this->size(); ++i) {
-    this->index(i) = dist(mt);
-  }
+template <typename T>
+void cel::Tensor<T>::RandU(T min, T max)
+{
 }
 
-template <>
-void cel::Tensor<std::uint8_t>::RandU(std::uint8_t min, std::uint8_t max) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  std::random_device rd;
-  std::mt19937 mt(rd());
-
-#ifdef _MSC_VER
-  std::uniform_int_distribution<int32_t> dist(min, max);
-  uint8_t max_value = std::numeric_limits<uint8_t>::max();
-  for (int32_t i = 0; i < this->size(); ++i) {
-    this->index(i) = dist(mt) % max_value;
-  }
-#else
-  std::uniform_int_distribution<std::uint8_t> dist(min, max);
-  for (size_t i = 0; i < this->size(); ++i) {
-    this->index(i) = dist(mt);
-  }
-#endif
-}
-
-template <>
-void cel::Tensor<float>::RandU(float min, float max) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  // CHECK(max >= min);
-  std::random_device rd;
-  std::mt19937 mt(rd());
-  std::uniform_real_distribution<float> dist(min, max);
-  for (size_t i = 0; i < this->size(); ++i) {
-    this->index(i) = dist(mt);
-  }
-}
 
 template <typename T>
 void cel::Tensor<T>::Ones() {
@@ -360,14 +315,8 @@ void cel::Tensor<T>::Ones() {
   this->Fill(T{1});
 }
 
-template <typename T>
-void cel::Tensor<T>::RandN(T mean, T var)
-{
-}
-template <typename T>
-void cel::Tensor<T>::RandU(T min, T max)
-{
-}
+
+
 template <typename T>
 void cel::Tensor<T>::Transform(const std::function<T(T)> &filter)
 {

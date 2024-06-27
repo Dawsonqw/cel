@@ -37,13 +37,17 @@ set(DEPEND
 set(
     TESTLIB
     ${GTEST_BOTH_LIBRARIES}
+    glog::glog
     onnx_parser
 )
-# add_executable(test_attribute test_attribute.cpp)
-# target_link_libraries(test_attribute PRIVATE ${TESTLIB})
+add_executable(test_attribute test_attribute.cpp)
+target_link_libraries(test_attribute PRIVATE ${TESTLIB})
 
-# add_executable(test_node test_node.cpp)
-# target_link_libraries(test_node PRIVATE ${TESTLIB})
+add_executable(test_node test_node.cpp)
+target_link_libraries(test_node PRIVATE ${TESTLIB})
 
 add_executable(test_tensor test_tensor.cpp)
 target_link_libraries(test_tensor PRIVATE ${TESTLIB})
+
+add_executable(test_onnx_parser test_onnx_parser.cpp)
+target_link_libraries(test_onnx_parser PRIVATE ${PROTOBUF_LIBRARY_DEBUG} ${TESTLIB})

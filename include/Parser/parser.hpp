@@ -5,15 +5,15 @@
 namespace cel{
     class Parser{
         public:
-            Parser(const std::string& file_name):file_name(file_name){}
+            Parser(const std::string& file_name):m_filename(file_name){}
             virtual ~Parser()=default;
 
             Parser(const Parser&)=delete;
             Parser& operator=(const Parser&)=delete;
 
             virtual void parse()=0;
-        private:
-            const std::string file_name;
+        protected:
+            const std::string m_filename;
     };
 }
 #endif

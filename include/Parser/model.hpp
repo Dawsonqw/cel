@@ -10,11 +10,47 @@ namespace cel{
             using node_map=std::map<std::string,node_ptr>;
             using edge_map=std::map<std::string,edge_ptr>;
         public:
+            Model()=default;
+            Model(const std::string& name):m_name(name),m_node_map(),m_edge_map(),m_attribute(){}
+            Model(const std::string& name,const Attribute& attribute):m_name(name),m_node_map(),m_edge_map(),m_attribute(attribute){}
+            Model(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
+                :m_name(name),m_node_map(),m_edge_map(),m_attribute(attribute),m_model_inputs(inputs),m_model_outputs(outputs){}
+            virtual ~Model()=default;
+
+            void set_name(const std::string& name);
+            const std::string& name() const;
+
+            void set_attribute(const Attribute& attribute);
+            const Attribute& attribute() const;
+
+            bool add_node(const std::string& name,node_ptr node);
+            bool add_edge(const std::string& name,edge_ptr edge);
+
+            bool del_node(const std::string& name);
+            bool del_edge(const std::string& name);
+
+            bool update_node(const std::string& name,node_ptr node);
+            bool update_edge(const std::string& name,edge_ptr edge);
+
+
+            bool add_input(edge_ptr input);
+            bool add_output(edge_ptr output);
+
+            bool del_input(const std::string& name);
+            bool del_output(const std::string& name);
+
+            void set_inputs(const edge_vec& inputs);
+            const edge_vec& inputs() const;
+
+            void set_outputs(const edge_vec& outputs);
+            const edge_vec& outputs() const;
         private:
             node_map m_node_map;
             edge_map m_edge_map;
             std::string m_name;
-            
+            Attribute m_attribute;
+            edge_vec m_model_inputs;
+            edge_vec m_model_outputs;
     };
 }
 

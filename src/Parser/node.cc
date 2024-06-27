@@ -10,6 +10,16 @@ const std::string &cel::Node::name() const
     return m_name;
 }
 
+const std::string &cel::Node::node_type() const
+{
+    return m_type;
+}
+
+void cel::Node::set_node_type(const std::string &type)
+{
+    m_type=type;
+}
+
 void cel::Node::set_attribute(const Attribute &attribute)
 {
     m_attribute=attribute;
