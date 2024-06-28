@@ -2,6 +2,8 @@
 #define BASE_PARSER_HPP
 #include <string>
 
+#include "model.hpp"
+
 namespace cel{
     class Parser{
         public:
@@ -11,7 +13,7 @@ namespace cel{
             Parser(const Parser&)=delete;
             Parser& operator=(const Parser&)=delete;
 
-            virtual void parse()=0;
+            virtual void parse(Model* model)=0;
         protected:
             const std::string m_filename;
     };

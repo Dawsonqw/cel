@@ -33,8 +33,8 @@ namespace cel{
             bool update_edge(const std::string& name,edge_ptr edge);
 
 
-            bool add_input(edge_ptr input);
-            bool add_output(edge_ptr output);
+            bool add_input(edge_ptr input,int insert_point=-1);
+            bool add_output(edge_ptr output,int insert_point=-1);
 
             bool del_input(const std::string& name);
             bool del_output(const std::string& name);

@@ -1,0 +1,54 @@
+---
+Language: Cpp
+
+# 基于的样式
+BasedOnStyle: LLVM
+
+# 缩进宽度
+IndentWidth: 4
+
+# 使用Tab字符还是空格进行缩进，默认为false（使用空格）
+UseTab: false
+
+# 代码块的大括号风格
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  BeforeLambdaBody: false
+  BeforeWhileLoopContinuation: false
+
+# 行宽限制
+ColumnLimit: 100
+
+# 操作符内嵌的空格
+SpaceBeforeParens: ControlStatements
+
+# 函数参数列表的换行风格
+AllowAllArgumentsOnNextLine: true
+AlignAfterOpenBracket: Align
+
+# 空格相关的设置
+SpacesBeforeTrailingComments: 2
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeCtorInitializerColon: true
+
+# 制表符相关设置
+TabWidth: 4
+
+# 换行设置
+BreakBeforeBinaryOperators: NonAssignment
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+
+# 其他设置，如对齐、空行等可根据需要添加
+...

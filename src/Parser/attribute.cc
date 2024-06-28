@@ -18,11 +18,16 @@ namespace cel{
         return m_attributes[key];
     }
 
-    std::any& Attribute::find(const std::string& key){
+    std::map<std::string, std::any> &Attribute::get_attributes()
+    {
+        return m_attributes;
+    }
+
+    std::any &Attribute::find(const std::string &key)
+    {
         if(m_attributes.find(key)==m_attributes.end()){
             m_attributes[key]=std::any();
         }
         return m_attributes[key];
     }
-
 }

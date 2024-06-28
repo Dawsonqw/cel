@@ -8,4 +8,9 @@ file(GLOB _sources
           onnx_parser.cc
     )
 
-add_library(onnx_parser SHARED  ${PROTOBUF_LIBRARY_DEBUG} ${_sources})
+set(
+    LIBS
+    glog::glog
+)
+
+add_library(onnx_parser STATIC ${_sources})

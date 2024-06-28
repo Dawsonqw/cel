@@ -11,8 +11,6 @@
 
 #include "llvm/ADT/StringRef.h"
 
-
-#define GLOG_USE_GLOG_EXPORT
 #include <glog/logging.h>
 
 namespace mlir

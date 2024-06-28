@@ -58,3 +58,5 @@ const cel::edge_vec &cel::Node::outputs() const
 {
     return m_output_edges;
 }
+
+void cel::Node::parse() {}

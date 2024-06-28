@@ -35,6 +35,8 @@ namespace cel{
             void set_edge_outputs(const edge_vec& outputs);
             const edge_vec& outputs() const;
 
+            virtual void parse();
+
         private:
             std::string m_name;
             std::string m_type;

@@ -20,6 +20,8 @@ namespace cel{
             std::any& find(const std::string& key);
 
             std::any& operator[](const std::string& key);
+
+            std::map<std::string,std::any>& get_attributes();
         
         private:
             std::map<std::string,std::any> m_attributes;
