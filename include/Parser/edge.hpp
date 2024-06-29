@@ -27,10 +27,15 @@ namespace cel{
             void set_index(const std::string& index);
 
         private:
+            // 唯一索引
             std::string m_index;
+            // 源节点
             node_ptr m_src;
+            // 源节点对应的输出索引
             uint32_t m_input_index;
+            // 目标节点
             node_ptr m_dst;
+            // 目标节点对应的输入索引
             uint32_t m_output_index;
             Tensor<float> m_data;
     };

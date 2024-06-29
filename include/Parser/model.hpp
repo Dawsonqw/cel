@@ -3,6 +3,8 @@
 #include "node.hpp"
 #include "edge.hpp"
 #include "utils.hpp"
+#include <glog/logging.h>
+#include <queue>
 
 namespace cel{
     class Model{
@@ -23,6 +25,15 @@ namespace cel{
             void set_attribute(const Attribute& attribute);
             const Attribute& attribute() const;
 
+            bool is_nodeExist(const std::string& name) const;
+            bool is_edgeEixst(const std::string& name) const;
+
+            int32_t get_node_num() const;
+            int32_t get_edge_num() const;
+
+            node_ptr get_node(const std::string& name) const;
+            edge_ptr get_edge(const std::string& name) const;
+
             bool add_node(const std::string& name,node_ptr node);
             bool add_edge(const std::string& name,edge_ptr edge);
 
@@ -31,7 +42,6 @@ namespace cel{
 
             bool update_node(const std::string& name,node_ptr node);
             bool update_edge(const std::string& name,edge_ptr edge);
-
 
             bool add_input(edge_ptr input,int insert_point=-1);
             bool add_output(edge_ptr output,int insert_point=-1);
@@ -44,6 +54,14 @@ namespace cel{
 
             void set_outputs(const edge_vec& outputs);
             const edge_vec& outputs() const;
+
+            void build_graph();
+
+            bool verify() const;
+                
+            void topological_sort();
+
+            void forward();
         private:
             node_map m_node_map;
             edge_map m_edge_map;
@@ -51,6 +69,7 @@ namespace cel{
             Attribute m_attribute;
             edge_vec m_model_inputs;
             edge_vec m_model_outputs;
+            std::queue<node_ptr> m_topo_seq;
     };
 }
 

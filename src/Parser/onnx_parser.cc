@@ -21,13 +21,55 @@ void cel::OnnxParser::parse(Model* model)
     }
     LOG(INFO)<<"Successfully parsed onnx model from file "<<m_filename;
 
+    parse_info(model);
     parse_inoutput(model);
     parse_initializer(model);
     parse_nodes(model);
+    build_graph(model);
 }
 
-void cel::OnnxParser::parse_inoutput(Model* model)
-{
+void cel::OnnxParser::parse_info(Model *model) {
+    Attribute attribute;
+    if(m_model.has_producer_name())
+    {
+        std::string producer_name=m_model.producer_name();
+        attribute.insert({"producer_name",producer_name});
+        LOG(INFO)<<"Producer name: "<<producer_name;
+    }
+    if(m_model.has_producer_version())
+    {
+        std::string producer_version=m_model.producer_version();
+        attribute.insert({"producer_version",producer_version});
+        LOG(INFO)<<"Producer version: "<<producer_version;
+    }
+    if(m_model.has_domain())
+    {
+        std::string domain=m_model.domain();
+        attribute.insert({"domain",domain});
+        LOG(INFO)<<"Domain: "<<domain;
+    }
+    if(m_model.has_model_version())
+    {
+        int64_t model_version=m_model.model_version();
+        attribute.insert({"model_version",model_version});
+        LOG(INFO)<<"Model version: "<<model_version;
+    }
+    if(m_model.has_doc_string())
+    {
+        std::string doc_string=m_model.doc_string();
+        attribute.insert({"doc_string",doc_string});
+        LOG(INFO)<<"Doc string: "<<doc_string;
+    }
+    if(m_model.has_ir_version())
+    {
+        int64_t ir_version=m_model.ir_version();
+        attribute.insert({"ir_version",ir_version});
+        LOG(INFO)<<"IR version: "<<ir_version;
+    }
+    model->set_attribute(attribute);
+}
+
+void cel::OnnxParser::parse_inoutput(Model *model) {
     for (const auto& input : m_model.graph().input()) {
             node_ptr node=std::make_shared<InputNode>(input.name());
             LOG(INFO) << "Input name: " << input.name();
@@ -40,7 +82,7 @@ void cel::OnnxParser::parse_inoutput(Model* model)
             attribute.insert({tensor_type,onnx_type});
             
             std::string shape="shape";
-            std::vector<int64_t> dims;
+            std::vector<int32_t> dims;
             if(input.type().tensor_type().has_shape())
             {
                 for (const auto& dim : input.type().tensor_type().shape().dim()) {
@@ -49,8 +91,16 @@ void cel::OnnxParser::parse_inoutput(Model* model)
             }else{
                 LOG(WARNING)<<"Input tensor "<<input.name()<<" has no shape!";
             }
+            m_input_info.insert({input.name(),{dims,onnx_type}});
+
             attribute.insert({shape,dims});
             node->set_attribute(attribute);
+
+            edge_vec outputs;
+            edge_ptr edge=std::make_shared<Edge>(input.name(),node,0,nullptr,0);
+            model->add_edge(edge->index(),edge);
+            outputs.push_back(edge);
+            node->set_edge_outputs(outputs);
 
             model->add_node(node->name(),node);
             LOG(INFO)<<node->name()<<" added to model";
@@ -68,7 +118,7 @@ void cel::OnnxParser::parse_inoutput(Model* model)
         attribute.insert({tensor_type,onnx_type});
         
         std::string shape="shape";
-        std::vector<int64_t> dims;
+        std::vector<int32_t> dims;
         if(output.type().tensor_type().has_shape())
         {
             for (const auto& dim : output.type().tensor_type().shape().dim()) {
@@ -77,14 +127,21 @@ void cel::OnnxParser::parse_inoutput(Model* model)
         }else{
             LOG(WARNING)<<"Output tensor "<<output.name()<<" has no shape!";
         }
+        m_output_info.insert({output.name(),{dims,onnx_type}});
+
         attribute.insert({shape,dims});
         node->set_attribute(attribute);
+
+        edge_vec inputs;
+        edge_ptr edge=std::make_shared<Edge>(output.name(),nullptr,0,node,0);
+        model->add_edge(edge->index(),edge);
+        inputs.push_back(edge);
+        node->set_edge_inputs(inputs);
 
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
     }
 }
-
 
 void cel::OnnxParser::parse_initializer(Model* model){
     for (const auto& initializer : m_model.graph().initializer()) {
@@ -111,9 +168,14 @@ void cel::OnnxParser::parse_initializer(Model* model){
             data_vec.push_back(data_val);
         }
         attribute.insert({data,data_vec});
-
         node->set_attribute(attribute);
 
+        edge_ptr edge=std::make_shared<Edge>(initializer.name(),node,0,nullptr,0);
+        edge_vec outputs;
+        outputs.push_back(edge);
+        node->set_edge_outputs(outputs);
+
+        model->add_edge(edge->index(),edge);
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
     }
@@ -123,13 +185,13 @@ void cel::OnnxParser::parse_nodes(Model* model){
     for (const auto& node : m_model.graph().node()) {
         std::string node_type=node.op_type();
         std::string node_name=node.name();
-        node_ptr node_ptr=create_node(node_type);
-        if(node_ptr==nullptr)
+        node_ptr cur_node_ptr=create_node(node_type);
+        if(cur_node_ptr==nullptr)
         {
             LOG(ERROR)<<"Node type "<<node_type<<" not supported!";
             continue;
         }
-        node_ptr->set_name(node_name);
+        cur_node_ptr->set_name(node_name);
         LOG(INFO) << "Node name: " << node_name;
         LOG(INFO) << "Node type: " << node_type;
 
@@ -139,10 +201,131 @@ void cel::OnnxParser::parse_nodes(Model* model){
             std::any attr_value=parse_attribute(attr);
             attribute.insert({attr_name,attr_value});
         }
+
+        cur_node_ptr->set_attribute(attribute);
+
+        edge_vec inputs;
+        uint32_t input_index=0;
+        for (const auto& input : node.input()) {
+            std::string input_name=input;
+            bool isExist=model->is_nodeExist(input_name);
+            if(isExist)
+            {
+                if(model->get_edge(input_name)!=nullptr){
+                    edge_ptr edge=model->get_edge(input_name);
+                    edge->set_dst(cur_node_ptr);
+                    edge->set_output_index(input_index);
+                    inputs.push_back(edge);
+
+                }else{
+                    node_ptr input_node=model->get_node(input_name);
+                    edge_ptr edge=std::make_shared<Edge>(input_name,input_node,0,cur_node_ptr,input_index);
+                    model->add_edge(edge->index(),edge);
+                    inputs.push_back(edge);
+                }
+            }else{
+                if(model->get_edge(input_name)!=nullptr){
+                    edge_ptr edge=model->get_edge(input_name);
+                    edge->set_dst(cur_node_ptr);
+                    edge->set_output_index(input_index);
+                    inputs.push_back(edge);
+                }else{
+                    edge_ptr edge=std::make_shared<Edge>(input_name,nullptr,0,cur_node_ptr,input_index);
+                    model->add_edge(edge->index(),edge);
+                    inputs.push_back(edge);
+                }
+            }
+        }
+
+        cur_node_ptr->set_edge_inputs(inputs);
+
+        edge_vec outputs;
+        uint32_t output_index=0;
+        for (const auto& output : node.output()) {
+            std::string output_name=output;
+            bool isExist=model->is_nodeExist(output_name);
+            if(isExist)
+            {
+                if(model->get_edge(output_name)!=nullptr){
+                    edge_ptr edge=model->get_edge(output_name);
+                    edge->set_src(cur_node_ptr);
+                    edge->set_input_index(output_index);
+                    outputs.push_back(edge);
+                }else{
+                    node_ptr output_node=model->get_node(output_name);
+                    edge_ptr edge=std::make_shared<Edge>(output_name,cur_node_ptr,0,output_node,output_index);
+                    model->add_edge(edge->index(),edge);
+                    outputs.push_back(edge);
+                }
+            }else{
+                if(model->get_edge(output_name)!=nullptr){
+                    edge_ptr edge=model->get_edge(output_name);
+                    edge->set_src(cur_node_ptr);
+                    edge->set_input_index(output_index);
+                    outputs.push_back(edge);
+                }else{
+                    edge_ptr edge=std::make_shared<Edge>(output_name,cur_node_ptr,0,nullptr,output_index);
+                    model->add_edge(edge->index(),edge);
+                    outputs.push_back(edge);
+                }
+            }
+        }
+
+        cur_node_ptr->set_edge_outputs(outputs);
+        model->add_node(cur_node_ptr->name(),cur_node_ptr);
+        LOG(INFO)<<"Node "<<cur_node_ptr->name()<<" added to model";
     }
 }
 
-std::any cel::OnnxParser::parse_attribute(const onnx::AttributeProto &attr) { 
+void cel::OnnxParser::build_graph(Model* model) {
+    LOG(INFO)<<"start building graph...";
+    std::queue<node_ptr> node_que;
+    for(auto& input : m_input_info){
+        node_ptr node=model->get_node(input.first);
+        LOG_IF(FATAL,node==nullptr)<<"Node "<<input.first<<" not found!";
+        node_que.push(node);
+    }
+
+    while(!node_que.empty()){
+        node_ptr cur_node=node_que.front();
+        DLOG(INFO)<<cur_node->name()<<" in queue";
+        node_que.pop();
+        int input_index=0;
+        for(auto& edge : cur_node->inputs()){
+            node_ptr prev_node=edge->src();
+            LOG_IF(FATAL,prev_node==nullptr)<<"Node "<<cur_node->name()<<" has no input node!";
+            if(edge->dst()==nullptr){
+                edge->set_dst(cur_node);
+            }
+            if(edge->output_index()!=input_index){
+                edge->set_output_index(input_index);
+            }
+        }
+        int output_index=0;
+        for(auto& edge : cur_node->outputs()){
+            if(edge->src()==nullptr){
+                edge->set_src(cur_node);
+            }
+            if(edge->input_index()!=output_index){
+                edge->set_input_index(output_index);
+            }
+            
+            node_ptr next_node=edge->dst();
+            LOG_IF(FATAL,next_node==nullptr)<<cur_node->name()<<" has no output node!";
+            node_que.push(next_node);
+        }
+    }
+
+    if(false==model->verify()){
+        LOG(ERROR)<<"Model verification failed!";
+        return;
+    }
+
+    LOG(INFO)<<model->name()<<" graph built successfully!";
+    LOG(INFO)<<model->name()<<" has "<<model->get_node_num()<<" nodes and "<<model->get_edge_num()<<" edges";
+}
+
+std::any cel::OnnxParser::parse_attribute(const onnx::AttributeProto &attr) {
     if(attr.type()==onnx::AttributeProto_AttributeType::AttributeProto_AttributeType_FLOAT)
     {
         return attr.f();
