@@ -10,7 +10,7 @@ namespace cel{
     class Model{
         public:
             using node_map=std::map<std::string,node_ptr>;
-            using edge_map=std::map<std::string,edge_ptr>;
+            using edge_map=std::map<std::string,edge_vec>;
         public:
             Model()=default;
             Model(const std::string& name):m_name(name),m_node_map(),m_edge_map(),m_attribute(){}
@@ -32,7 +32,7 @@ namespace cel{
             int32_t get_edge_num() const;
 
             node_ptr get_node(const std::string& name) const;
-            edge_ptr get_edge(const std::string& name) const;
+            edge_vec get_edge(const std::string& name) const;
 
             bool add_node(const std::string& name,node_ptr node);
             bool add_edge(const std::string& name,edge_ptr edge);
@@ -41,7 +41,7 @@ namespace cel{
             bool del_edge(const std::string& name);
 
             bool update_node(const std::string& name,node_ptr node);
-            bool update_edge(const std::string& name,edge_ptr edge);
+            bool update_edge(const std::string& name,edge_vec edge);
 
             bool add_input(edge_ptr input,int insert_point=-1);
             bool add_output(edge_ptr output,int insert_point=-1);
@@ -54,8 +54,6 @@ namespace cel{
 
             void set_outputs(const edge_vec& outputs);
             const edge_vec& outputs() const;
-
-            void build_graph();
 
             bool verify() const;
                 

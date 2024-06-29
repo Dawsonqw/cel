@@ -46,6 +46,8 @@ namespace cel{
 
             void parse_initializer(Model* model);
 
+            void parse_edge(Model* model);
+
             void parse_nodes(Model* model);
 
             void build_graph(Model* model);
@@ -58,6 +60,11 @@ namespace cel{
             onnx::ModelProto m_model;
             std::map<std::string,std::pair<std::vector<int32_t>,OnnxType>> m_input_info;
             std::map<std::string,std::pair<std::vector<int32_t>,OnnxType>> m_output_info;
+
+            // key为edge的名称，value为以edge作为输入节点名称,以及对应于输入节点的index
+            std::map<std::string,std::vector<std::pair<std::string,int32_t>>> m_edge_inputs;
+            // key为edge的名称，value以edge作为输出节点名称，以及对应于输出节点的index
+            std::map<std::string,std::vector<std::pair<std::string,int32_t>>> m_edge_outputs;
     };
 }
 

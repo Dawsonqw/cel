@@ -25,6 +25,7 @@ namespace cel{
             void set_dst(node_ptr dst);
             void set_output_index(uint32_t output_index);
             void set_index(const std::string& index);
+            void add_dst(node_ptr dst,uint32_t output_index);
 
         private:
             // 唯一索引

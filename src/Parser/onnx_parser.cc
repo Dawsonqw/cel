@@ -24,6 +24,7 @@ void cel::OnnxParser::parse(Model* model)
     parse_info(model);
     parse_inoutput(model);
     parse_initializer(model);
+    parse_edge(model);
     parse_nodes(model);
     build_graph(model);
 }
@@ -96,11 +97,11 @@ void cel::OnnxParser::parse_inoutput(Model *model) {
             attribute.insert({shape,dims});
             node->set_attribute(attribute);
 
-            edge_vec outputs;
-            edge_ptr edge=std::make_shared<Edge>(input.name(),node,0,nullptr,0);
-            model->add_edge(edge->index(),edge);
-            outputs.push_back(edge);
-            node->set_edge_outputs(outputs);
+            // edge_vec outputs;
+            // edge_ptr edge=std::make_shared<Edge>(input.name(),node,0,nullptr,0);
+            // model->add_edge(edge->index(),edge);
+            // outputs.push_back(edge);
+            // node->set_edge_outputs(outputs);
 
             model->add_node(node->name(),node);
             LOG(INFO)<<node->name()<<" added to model";
@@ -132,11 +133,11 @@ void cel::OnnxParser::parse_inoutput(Model *model) {
         attribute.insert({shape,dims});
         node->set_attribute(attribute);
 
-        edge_vec inputs;
-        edge_ptr edge=std::make_shared<Edge>(output.name(),nullptr,0,node,0);
-        model->add_edge(edge->index(),edge);
-        inputs.push_back(edge);
-        node->set_edge_inputs(inputs);
+        // edge_vec inputs;
+        // edge_ptr edge=std::make_shared<Edge>(output.name(),nullptr,0,node,0);
+        // model->add_edge(edge->index(),edge);
+        // inputs.push_back(edge);
+        // node->set_edge_inputs(inputs);
 
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
@@ -170,18 +171,59 @@ void cel::OnnxParser::parse_initializer(Model* model){
         attribute.insert({data,data_vec});
         node->set_attribute(attribute);
 
-        edge_ptr edge=std::make_shared<Edge>(initializer.name(),node,0,nullptr,0);
-        edge_vec outputs;
-        outputs.push_back(edge);
-        node->set_edge_outputs(outputs);
+        // edge_ptr edge=std::make_shared<Edge>(initializer.name(),node,0,nullptr,0);
+        // edge_vec outputs;
+        // outputs.push_back(edge);
+        // model->add_edge(edge->index(),edge);
+        // node->set_edge_outputs(outputs);
 
-        model->add_edge(edge->index(),edge);
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
     }
 }
 
-void cel::OnnxParser::parse_nodes(Model* model){
+void cel::OnnxParser::parse_edge(Model *model) {
+    // input outut
+    for (const auto& input : m_model.graph().input()) {
+        m_edge_inputs.insert({input.name(),{std::pair<std::string,uint32_t>(input.name(),0)}});
+    }
+    for(const auto& output : m_model.graph().output())
+    {
+        m_edge_outputs.insert({output.name(),{std::pair<std::string,uint32_t>(output.name(),0)}});
+    }
+
+    // initializer
+    for(const auto& initializer : m_model.graph().initializer())
+    {
+        m_edge_inputs.insert({initializer.name(),{std::pair<std::string,uint32_t>(initializer.name(),0)}});
+    }
+
+    // nodes
+    for(const auto& node : m_model.graph().node())
+    {
+        int32_t  input_index=0;
+        for(const auto& input : node.input())
+        {
+            if(m_edge_outputs.find(input)==m_edge_outputs.end())
+            {
+                m_edge_outputs.insert({input,{std::pair<std::string,uint32_t>(node.name(),input_index)}});
+            }else{
+                m_edge_outputs[input].push_back(std::pair<std::string,uint32_t>(node.name(),input_index));
+            }
+            input_index++;
+        }
+
+        int32_t output_index=0;
+        for(const auto& output : node.output())
+        {
+            LOG_IF(FATAL,m_edge_inputs.find(output)!=m_edge_inputs.end())<<"Edge "<<output<<" has multiple inputs!";
+            m_edge_inputs.insert({output,{std::pair<std::string,uint32_t>(node.name(),output_index)}});
+            output_index++;
+        }
+    }
+}
+
+void cel::OnnxParser::parse_nodes(Model *model) {
     for (const auto& node : m_model.graph().node()) {
         std::string node_type=node.op_type();
         std::string node_name=node.name();
@@ -192,6 +234,7 @@ void cel::OnnxParser::parse_nodes(Model* model){
             continue;
         }
         cur_node_ptr->set_name(node_name);
+        cur_node_ptr->set_node_type(node_type);
         LOG(INFO) << "Node name: " << node_name;
         LOG(INFO) << "Node type: " << node_type;
 
@@ -206,74 +249,74 @@ void cel::OnnxParser::parse_nodes(Model* model){
 
         edge_vec inputs;
         uint32_t input_index=0;
-        for (const auto& input : node.input()) {
-            std::string input_name=input;
-            bool isExist=model->is_nodeExist(input_name);
-            if(isExist)
-            {
-                if(model->get_edge(input_name)!=nullptr){
-                    edge_ptr edge=model->get_edge(input_name);
-                    edge->set_dst(cur_node_ptr);
-                    edge->set_output_index(input_index);
-                    inputs.push_back(edge);
 
-                }else{
-                    node_ptr input_node=model->get_node(input_name);
-                    edge_ptr edge=std::make_shared<Edge>(input_name,input_node,0,cur_node_ptr,input_index);
-                    model->add_edge(edge->index(),edge);
-                    inputs.push_back(edge);
-                }
-            }else{
-                if(model->get_edge(input_name)!=nullptr){
-                    edge_ptr edge=model->get_edge(input_name);
-                    edge->set_dst(cur_node_ptr);
-                    edge->set_output_index(input_index);
-                    inputs.push_back(edge);
-                }else{
-                    edge_ptr edge=std::make_shared<Edge>(input_name,nullptr,0,cur_node_ptr,input_index);
-                    model->add_edge(edge->index(),edge);
-                    inputs.push_back(edge);
-                }
-            }
-        }
-
-        cur_node_ptr->set_edge_inputs(inputs);
-
-        edge_vec outputs;
-        uint32_t output_index=0;
-        for (const auto& output : node.output()) {
-            std::string output_name=output;
-            bool isExist=model->is_nodeExist(output_name);
-            if(isExist)
-            {
-                if(model->get_edge(output_name)!=nullptr){
-                    edge_ptr edge=model->get_edge(output_name);
-                    edge->set_src(cur_node_ptr);
-                    edge->set_input_index(output_index);
-                    outputs.push_back(edge);
-                }else{
-                    node_ptr output_node=model->get_node(output_name);
-                    edge_ptr edge=std::make_shared<Edge>(output_name,cur_node_ptr,0,output_node,output_index);
-                    model->add_edge(edge->index(),edge);
-                    outputs.push_back(edge);
-                }
-            }else{
-                if(model->get_edge(output_name)!=nullptr){
-                    edge_ptr edge=model->get_edge(output_name);
-                    edge->set_src(cur_node_ptr);
-                    edge->set_input_index(output_index);
-                    outputs.push_back(edge);
-                }else{
-                    edge_ptr edge=std::make_shared<Edge>(output_name,cur_node_ptr,0,nullptr,output_index);
-                    model->add_edge(edge->index(),edge);
-                    outputs.push_back(edge);
-                }
-            }
-        }
-
-        cur_node_ptr->set_edge_outputs(outputs);
         model->add_node(cur_node_ptr->name(),cur_node_ptr);
         LOG(INFO)<<"Node "<<cur_node_ptr->name()<<" added to model";
+    }
+
+    LOG_IF(FATAL,m_edge_inputs.size()!=m_edge_outputs.size())<<"Input edge num "<<m_edge_inputs.size()<<" not equal to output edge num "<<m_edge_outputs.size();
+
+    for (const auto& node : m_model.graph().node()) {
+        int32_t input_index=0;
+        std::string node_name=node.name();
+        LOG_IF(FATAL,model->get_node(node_name)==nullptr)<<"Node "<<node_name<<" not found!";
+        node_ptr cur_node=model->get_node(node_name);
+        edge_vec node_inputs;
+        edge_vec node_outputs;
+        for(const auto& input : node.input())
+        {
+            LOG_IF(FATAL,m_edge_inputs[input].size()!=1)<<"Edge "<<input<<" has multiple outputs!";
+            std::pair<std::string,uint32_t> src_pair=m_edge_inputs[input][0];
+            std::string src_node_name=src_pair.first;
+            uint32_t src_index=src_pair.second;
+            node_ptr src_node=model->get_node(src_node_name);
+            LOG_IF(FATAL,src_node==nullptr)<<"Node "<<src_node_name<<" not found!";
+            edge_ptr edge=std::make_shared<Edge>(input,src_node,src_index,cur_node,input_index);
+            model->add_edge(edge->index(),edge);
+            node_inputs.push_back(edge);
+        }
+        cur_node->set_edge_inputs(node_inputs);
+        
+        int32_t output_index=0;
+        for(const auto& output : node.output())
+        {
+            std::vector<std::pair<std::string,int32_t>> dst_pair_vec=m_edge_outputs[output];
+            for(const auto& dst_pair : dst_pair_vec)
+            {
+                std::string dst_node_name=dst_pair.first;
+                uint32_t dst_index=dst_pair.second;
+                node_ptr dst_node=model->get_node(dst_node_name);
+                LOG_IF(FATAL,dst_node==nullptr)<<"Node "<<dst_node_name<<" not found!";
+                edge_ptr edge=std::make_shared<Edge>(output,cur_node,output_index,dst_node,dst_index);
+                model->add_edge(edge->index(),edge);
+                node_outputs.push_back(edge);
+            }
+        }
+        cur_node->set_edge_outputs(node_outputs);
+    }
+
+    for (const auto& input : m_model.graph().input()) {
+        node_ptr node=model->get_node(input.name());
+        LOG_IF(FATAL,node==nullptr)<<"Node "<<input.name()<<" not found!";
+        LOG_IF(FATAL,model->is_edgeEixst(input.name())==false)<<"Edge "<<input.name()<<" not found!";
+        edge_vec outputs=model->get_edge(input.name());
+        node->set_edge_outputs(outputs);
+    }
+    for(const auto& output : m_model.graph().output())
+    {
+        node_ptr node=model->get_node(output.name());
+        LOG_IF(FATAL,node==nullptr)<<"Node "<<output.name()<<" not found!";
+        LOG_IF(FATAL,model->is_edgeEixst(output.name())==false)<<"Edge "<<output.name()<<" not found!";
+        edge_vec inputs=model->get_edge(output.name());
+        node->set_edge_inputs(inputs);
+    }
+    for(const auto& initializer : m_model.graph().initializer())
+    {
+        node_ptr node=model->get_node(initializer.name());
+        LOG_IF(FATAL,node==nullptr)<<"Node "<<initializer.name()<<" not found!";
+        LOG_IF(FATAL,model->is_edgeEixst(initializer.name())==false)<<"Edge "<<initializer.name()<<" not found!";
+        edge_vec outputs=model->get_edge(initializer.name());
+        node->set_edge_outputs(outputs);
     }
 }
 

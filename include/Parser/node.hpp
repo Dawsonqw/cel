@@ -32,8 +32,11 @@ namespace cel{
 
             void set_edge_inputs(const edge_vec& inputs);
             const edge_vec& inputs() const;
+            const int32_t get_input_edge_num() const;
+
             void set_edge_outputs(const edge_vec& outputs);
             const edge_vec& outputs() const;
+            const int32_t get_output_edge_num() const;
 
             virtual void parse();
 

@@ -43,11 +43,12 @@ cel::node_ptr cel::Model::get_node(const std::string &name) const {
     return m_node_map.at(name);
 }
 
-cel::edge_ptr cel::Model::get_edge(const std::string &name) const { 
+std::vector<cel::edge_ptr> cel::Model::get_edge(const std::string &name) const { 
     if(m_edge_map.find(name)==m_edge_map.end()){
-        return edge_ptr();
+        return std::vector<edge_ptr>();
     }
-    return m_edge_map.at(name);
+    std::vector<edge_ptr> edges=m_edge_map.at(name);
+    return edges;
 }
 
 bool cel::Model::add_node(const std::string &name, node_ptr node) {
@@ -65,7 +66,10 @@ bool cel::Model::add_edge(const std::string &name, edge_ptr edge)
     {
         return false;
     }
-    m_edge_map[name] = edge;
+    if(m_edge_map[name].empty()){
+        m_edge_map[name]=std::vector<edge_ptr>();
+    }
+    m_edge_map[name].push_back(edge);
     return true;
 }
 
@@ -99,7 +103,7 @@ bool cel::Model::update_node(const std::string &name, node_ptr node)
     return true;
 }
 
-bool cel::Model::update_edge(const std::string &name, edge_ptr edge)
+bool cel::Model::update_edge(const std::string &name, edge_vec edge)
 {
     if (m_edge_map.find(name) == m_edge_map.end())
     {
@@ -173,15 +177,18 @@ const cel::edge_vec &cel::Model::outputs() const
     return m_model_outputs;
 }
 
-void cel::Model::build_graph() {
-}
-
 bool cel::Model::verify() const {
     bool flag=true;
     for(auto iter=m_edge_map.begin();iter!=m_edge_map.end();++iter){
-        if(iter->second->src()==nullptr || iter->second->dst()==nullptr){
+        if(iter->second.empty()){
             LOG(ERROR)<<"Edge "<<iter->first<<" is invalid";
             flag=false;
+        }
+        for(auto edge:iter->second){
+            if(edge==nullptr){
+                LOG(ERROR)<<"Edge "<<iter->first<<" is invalid";
+                flag=false;
+            }
         }
     }
     for(auto iter=m_node_map.begin();iter!=m_node_map.end();++iter){
@@ -195,18 +202,15 @@ bool cel::Model::verify() const {
 
 void cel::Model::topological_sort() {
     std::queue<node_ptr> topo_seq;
-    std::map<node_ptr, int> in_degree;
+    std::map<node_ptr, int32_t> in_degree;
     DLOG(INFO)<<"m_node_map size:"<<m_node_map.size();
     DLOG(INFO)<<"m_edge_map size:"<<m_edge_map.size();
 
     for (auto iter = m_node_map.begin(); iter != m_node_map.end(); ++iter)
     {
-        in_degree[iter->second] = 0;
+        in_degree[iter->second] = iter->second->get_input_edge_num();
     }
-    for (auto iter = m_edge_map.begin(); iter != m_edge_map.end(); ++iter)
-    {
-        in_degree[iter->second->dst()]++;
-    }
+
     for (auto iter = in_degree.begin(); iter != in_degree.end(); ++iter)
     {
         if (iter->second == 0)
@@ -222,11 +226,12 @@ void cel::Model::topological_sort() {
         topo_seq.pop();
         for (auto iter = node->outputs().begin(); iter != node->outputs().end(); ++iter)
         {
-            DLOG(INFO)<<(*iter)->dst()->name()<<" in_degree: "<<in_degree[(*iter)->dst()];
-            in_degree[(*iter)->dst()]--;
-            if (in_degree[(*iter)->dst()] == 0)
+            node_ptr dst_node=(*iter)->dst();
+            DLOG(INFO)<<dst_node->name()<<" in_degree: "<<in_degree[dst_node];
+            in_degree[dst_node]--;
+            if (in_degree[dst_node] == 0)
             {
-                topo_seq.push((*iter)->dst());
+                topo_seq.push(dst_node);
             }
         }
     }
@@ -237,13 +242,6 @@ void cel::Model::topological_sort() {
             return;
         }
     }
-
-    // 遍历m_topo_seq
-    // for(int i=0;i<m_topo_seq.size();i++){
-    //     DLOG(INFO)<<"Topological sort sequence:"<<m_topo_seq.front()->name();
-    //     m_topo_seq.pop();
-    // }
-    LOG(INFO)<<"Topological sort done,and the sequence size is:"<<topo_seq.size();
 }
 
 void cel::Model::forward() {
