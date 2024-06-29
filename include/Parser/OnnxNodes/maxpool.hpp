@@ -5,12 +5,13 @@
 namespace cel{
     class MaxPoolNode: public Node{
         public:
-            MaxPoolNode()=default;
+            MaxPoolNode():Node(){}
             MaxPoolNode(const std::string& name):Node(name,"MaxPool"){}
             MaxPoolNode(const std::string& name,const Attribute& attribute):Node(name,"MaxPool",attribute){}
             MaxPoolNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                 :Node(name,"MaxPool",attribute,inputs,outputs){}
-            virtual ~MaxPoolNode()=default;
+            ~MaxPoolNode()=default;
+            void forward();
     };
 }
 

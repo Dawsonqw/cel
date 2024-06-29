@@ -4,6 +4,7 @@
 #include <memory>
 #include <numeric>
 #include <vector>
+#include <glog/logging.h>
 
 namespace cel{
     template<typename T=double>
@@ -18,6 +19,7 @@ namespace cel{
             explicit Tensor(int32_t size);
             explicit Tensor(int32_t rows, int32_t cols);
             explicit Tensor(const std::vector<int32_t>& shapes);
+            ~Tensor();
             int32_t rows() const;
             int32_t cols() const;
             int32_t channels() const;
@@ -55,14 +57,14 @@ namespace cel{
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t size) {
-  // CHECK_NE(raw_ptr, nullptr);
+  CHECK_NE(raw_ptr, nullptr);
   this->m_shape = {size};
   this->m_data = arma::Cube<T>(raw_ptr, 1, size, 1, false, true);
 }
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t rows, int32_t cols) {
-  // CHECK_NE(raw_ptr, nullptr);
+  CHECK_NE(raw_ptr, nullptr);
   this->m_data = arma::Cube<T>(raw_ptr, rows, cols, 1, false, true);
   if (rows == 1) {
     this->m_shape = std::vector<int32_t>{cols};
@@ -73,7 +75,7 @@ cel::Tensor<T>::Tensor(T* raw_ptr, int32_t rows, int32_t cols) {
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t channels, int32_t rows, int32_t cols) {
-  // CHECK_NE(raw_ptr, nullptr);
+  CHECK_NE(raw_ptr, nullptr);
   this->m_data = arma::Cube<T>(raw_ptr, rows, cols, channels, false, true);
   if (channels == 1 && rows == 1) {
     this->m_shape = std::vector<int32_t>{cols};
@@ -86,7 +88,7 @@ cel::Tensor<T>::Tensor(T* raw_ptr, int32_t channels, int32_t rows, int32_t cols)
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, const std::vector<int32_t>& shapes) {
-  // // CHECK_EQ(shapes.size(), 3);
+  CHECK_EQ(shapes.size(), 3);
   int32_t channels = shapes.at(0);
   int32_t rows = shapes.at(1);
   int32_t cols = shapes.at(2);
@@ -132,7 +134,7 @@ cel::Tensor<T>::Tensor(int32_t rows, int32_t cols) {
 
 template <typename T>
 cel::Tensor<T>::Tensor(const std::vector<int32_t>& shapes) {
-  // CHECK(!shapes.empty() && shapes.size() <= 3);
+  CHECK(!shapes.empty() && shapes.size() <= 3);
 
   int32_t remaining = 3 - shapes.size();
   std::vector<int32_t> shapes_(3, 1);
@@ -153,34 +155,39 @@ cel::Tensor<T>::Tensor(const std::vector<int32_t>& shapes) {
 }
 
 template <typename T>
+cel::Tensor<T>::~Tensor(){
+  LOG(INFO)<<"Tensor is destructed";
+}
+
+template <typename T>
 int32_t cel::Tensor<T>::rows() const {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.n_rows;
 }
 
 template <typename T>
 int32_t cel::Tensor<T>::cols() const {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.n_cols;
 }
 
 template <typename T>
 int32_t cel::Tensor<T>::channels() const {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.n_slices;
 }
 
 template <typename T>
 size_t cel::Tensor<T>::size() const {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.size();
 }
 
 template <typename T>
 void cel::Tensor<T>::set_data(const arma::Cube<T>& data) {
-  // CHECK(data.n_rows == this->m_data.n_rows) << data.n_rows << " != " << this->m_data.n_rows;
-  // CHECK(data.n_cols == this->m_data.n_cols) << data.n_cols << " != " << this->m_data.n_cols;
-  // CHECK(data.n_slices == this->m_data.n_slices) << data.n_slices << " != " << this->m_data.n_slices;
+  CHECK(data.n_rows == this->m_data.n_rows) << data.n_rows << " != " << this->m_data.n_rows;
+  CHECK(data.n_cols == this->m_data.n_cols) << data.n_cols << " != " << this->m_data.n_cols;
+  CHECK(data.n_slices == this->m_data.n_slices) << data.n_slices << " != " << this->m_data.n_slices;
   this->m_data = data;
 }
 
@@ -191,19 +198,19 @@ bool cel::Tensor<T>::empty() const {
 
 template <typename T>
 const T cel::Tensor<T>::index(int32_t offset) const {
-  // CHECK(offset < this->m_data.size()) << "Tensor index out of bound!";
+  CHECK(offset < this->m_data.size()) << "Tensor index out of bound!";
   return this->m_data.at(offset);
 }
 
 template <typename T>
 T& cel::Tensor<T>::index(int32_t offset) {
-  // CHECK(offset < this->m_data.size()) << "Tensor index out of bound!";
+  CHECK(offset < this->m_data.size()) << "Tensor index out of bound!";
   return this->m_data.at(offset);
 }
 
 template <typename T>
 std::vector<int32_t> cel::Tensor<T>::shapes() const {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return {this->channels(), this->rows(), this->cols()};
 }
 
@@ -219,36 +226,36 @@ const arma::Cube<T>& cel::Tensor<T>::data() const {
 
 template <typename T>
 arma::Mat<T>& cel::Tensor<T>::slice(int32_t channel) {
-  // CHECK_LT(channel, this->channels());
+  CHECK_LT(channel, this->channels());
   return this->m_data.slice(channel);
 }
 
 template <typename T>
 const arma::Mat<T>& cel::Tensor<T>::slice(int32_t channel) const {
-  // CHECK_LT(channel, this->channels());
+  CHECK_LT(channel, this->channels());
   return this->m_data.slice(channel);
 }
 
 template <typename T>
 const T cel::Tensor<T>::at(int32_t channel, int32_t row, int32_t col) const {
-  // CHECK_LT(row, this->rows());
-  // CHECK_LT(col, this->cols());
-  // CHECK_LT(channel, this->channels());
+  CHECK_LT(row, this->rows());
+  CHECK_LT(col, this->cols());
+  CHECK_LT(channel, this->channels());
   return this->m_data.at(row, col, channel);
 }
 
 template <typename T>
 T& cel::Tensor<T>::at(int32_t channel, int32_t row, int32_t col) {
-  // CHECK_LT(row, this->rows());
-  // CHECK_LT(col, this->cols());
-  // CHECK_LT(channel, this->channels());
+  CHECK_LT(row, this->rows());
+  CHECK_LT(col, this->cols());
+  CHECK_LT(channel, this->channels());
   return this->m_data.at(row, col, channel);
 }
 
 template <typename T>
 void cel::Tensor<T>::Padding(const std::vector<int32_t>& pads, T padding_value) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  // // CHECK_EQ(pads.size(), 4);
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK_EQ(pads.size(), 4);
   int32_t pad_rows1 = pads.at(0);  // up
   int32_t pad_rows2 = pads.at(1);  // bottom
   int32_t pad_cols1 = pads.at(2);  // left
@@ -266,15 +273,15 @@ void cel::Tensor<T>::Padding(const std::vector<int32_t>& pads, T padding_value) 
 
 template <typename T>
 void cel::Tensor<T>::Fill(T value) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   this->m_data.fill(value);
 }
 
 template <typename T>
 void cel::Tensor<T>::Fill(const std::vector<T>& values, bool row_major) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   const int32_t total_elems = this->m_data.size();
-  // // CHECK_EQ(values.size(), total_elems);
+  CHECK_EQ(values.size(), total_elems);
   if (row_major) {
     const int32_t rows = this->rows();
     const int32_t cols = this->cols();
@@ -293,7 +300,7 @@ void cel::Tensor<T>::Fill(const std::vector<T>& values, bool row_major) {
 
 template <typename T>
 void cel::Tensor<T>::Flatten(bool row_major) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   const int32_t size = this->m_data.size();
   this->Reshape({size}, row_major);
 }
@@ -311,7 +318,7 @@ void cel::Tensor<T>::RandU(T min, T max)
 
 template <typename T>
 void cel::Tensor<T>::Ones() {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   this->Fill(T{1});
 }
 
@@ -320,27 +327,27 @@ void cel::Tensor<T>::Ones() {
 template <typename T>
 void cel::Tensor<T>::Transform(const std::function<T(T)> &filter)
 {
-    // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+    CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
     this->m_data.transform(filter);
 }
 
 template <typename T>
 const std::vector<int32_t>& cel::Tensor<T>::raw_shapes() const {
-  // CHECK(!this->m_shape.empty());
-  // CHECK_LE(this->m_shape.size(), 3);
-  // CHECK_GE(this->m_shape.size(), 1);
+  CHECK(!this->m_shape.empty());
+  CHECK_LE(this->m_shape.size(), 3);
+  CHECK_GE(this->m_shape.size(), 1);
   return this->m_shape;
 }
 
 template <typename T>
 void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  // CHECK(!shapes.empty());
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!shapes.empty());
   const size_t origin_size = this->size();
   const size_t current_size =
       std::accumulate(shapes.begin(), shapes.end(), size_t(1), std::multiplies<size_t>());
-  // CHECK(shapes.size() <= 3);
-  // CHECK(current_size == origin_size);
+  CHECK(shapes.size() <= 3);
+  CHECK(current_size == origin_size);
   if (!row_major) {
     if (shapes.size() == 3) {
       this->m_data.reshape(shapes.at(1), shapes.at(2), shapes.at(0));
@@ -368,7 +375,7 @@ void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major)
 
 template <typename T>
 T* cel::Tensor<T>::raw_ptr() {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.memptr();
 }
 
@@ -380,14 +387,14 @@ const T* cel::Tensor<T>::raw_ptr() const {
 template <typename T>
 const T* cel::Tensor<T>::raw_ptr(size_t offset)const {
   const size_t size = this->size();
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  // CHECK_LT(offset, size);
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK_LT(offset, size);
   return this->m_data.memptr() + offset;
 }
 
 template <typename T>
 std::vector<T> cel::Tensor<T>::values(bool row_major) {
-  // // CHECK_EQ(this->m_data.empty(), false);
+  CHECK_EQ(this->m_data.empty(), false);
   std::vector<T> values(this->m_data.size());
 
   if (!row_major) {
@@ -399,7 +406,7 @@ std::vector<T> cel::Tensor<T>::values(bool row_major) {
       std::copy(channel.begin(), channel.end(), values.begin() + index);
       index += channel.size();
     }
-    // // CHECK_EQ(index, values.size());
+    CHECK_EQ(index, values.size());
   }
   return values;
 }

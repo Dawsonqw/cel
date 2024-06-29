@@ -3,6 +3,8 @@
 #include "node.hpp"
 #include "edge.hpp"
 #include "utils.hpp"
+#include "tensor.hpp"
+#include "tensor_utils.hpp"
 #include <glog/logging.h>
 #include <queue>
 
@@ -59,7 +61,7 @@ namespace cel{
                 
             void topological_sort();
 
-            void forward();
+            void forward(std::map<std::string,Tensor<float>>& tensors);
         private:
             node_map m_node_map;
             edge_map m_edge_map;

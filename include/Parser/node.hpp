@@ -9,14 +9,14 @@
 namespace cel{
     class Node{
         public:
-            Node()=default;
+            Node():m_name(""),m_type(""),m_attribute(cel::Attribute()),m_input_edges(),m_output_edges(){}
             Node(const std::string& name,const std::string& type):m_name(name),m_type(type),m_attribute(cel::Attribute()),m_input_edges(),m_output_edges(){}
             Node(const std::string& name,const std::string& type,const Attribute& attribute):m_name(name),m_type(type),m_attribute(attribute),
                                     m_input_edges(),m_output_edges(){}
             Node(const std::string& name,const std::string& type,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                                     :m_name(name),m_type(type),m_attribute(attribute),m_input_edges(inputs),m_output_edges(outputs){}
 
-            virtual ~Node()=default;
+            virtual ~Node(){}
 
             void set_name(const std::string& name);
             const std::string& name() const;
@@ -38,7 +38,7 @@ namespace cel{
             const edge_vec& outputs() const;
             const int32_t get_output_edge_num() const;
 
-            virtual void parse();
+            virtual void forward();
 
         private:
             std::string m_name;

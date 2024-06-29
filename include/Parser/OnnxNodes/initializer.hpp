@@ -5,12 +5,13 @@
 namespace cel{
     class InitializerNode: public Node{
         public:
-            InitializerNode()=default;
-            InitializerNode(const std::string& name):Node(name,"initializer"){}
-            InitializerNode(const std::string& name,const Attribute& attribute):Node(name,"initializer",attribute){}
+            InitializerNode():Node(){}
+            InitializerNode(const std::string& name):Node(name,"Initializer"){}
+            InitializerNode(const std::string& name,const Attribute& attribute):Node(name,"Initializer",attribute){}
             InitializerNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
-                :Node(name,"initializer",attribute,inputs,outputs){}
-            virtual ~InitializerNode()=default;
+                :Node(name,"Initializer",attribute,inputs,outputs){}
+            ~InitializerNode()=default;
+            void forward();
     };
 }
 

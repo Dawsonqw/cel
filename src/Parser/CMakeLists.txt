@@ -4,8 +4,10 @@ file(GLOB _sources
           model.cc
           attribute.cc
           tensor.cc          
+          tensor_utils.cc          
           onnx.pb.cc
           onnx_parser.cc
+          OnnxNodes/*.cc
     )
 
 set(

@@ -18,7 +18,12 @@ def gen_target(node_type):
             lines.insert(-1, f'#include "{node_type.lower()}.hpp"\n')
             with open("nodes.hpp", 'w') as f:
                 f.writelines(lines)
-
+# Input
+gen_target("Input")
+# Output
+gen_target("Output")
+# initializer
+gen_target("Initializer")
 # Conv
 gen_target("Conv")
 # Relu

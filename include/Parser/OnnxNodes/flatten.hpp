@@ -5,12 +5,13 @@
 namespace cel{
     class FlattenNode: public Node{
         public:
-            FlattenNode()=default;
+            FlattenNode():Node(){}
             FlattenNode(const std::string& name):Node(name,"Flatten"){}
             FlattenNode(const std::string& name,const Attribute& attribute):Node(name,"Flatten",attribute){}
             FlattenNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                 :Node(name,"Flatten",attribute,inputs,outputs){}
-            virtual ~FlattenNode()=default;
+            ~FlattenNode()=default;
+            void forward();
     };
 }
 

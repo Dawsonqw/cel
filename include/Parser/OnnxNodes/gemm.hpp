@@ -5,12 +5,13 @@
 namespace cel{
     class GemmNode: public Node{
         public:
-            GemmNode()=default;
+            GemmNode(){}
             GemmNode(const std::string& name):Node(name,"Gemm"){}
             GemmNode(const std::string& name,const Attribute& attribute):Node(name,"Gemm",attribute){}
             GemmNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                 :Node(name,"Gemm",attribute,inputs,outputs){}
-            virtual ~GemmNode()=default;
+            ~GemmNode()=default;
+            void forward();
     };
 }
 

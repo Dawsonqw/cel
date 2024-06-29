@@ -5,12 +5,13 @@
 namespace cel{
     class ConvNode: public Node{
         public:
-            ConvNode()=default;
+            ConvNode():Node(){}
             ConvNode(const std::string& name):Node(name,"Conv"){}
             ConvNode(const std::string& name,const Attribute& attribute):Node(name,"Conv",attribute){}
             ConvNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                 :Node(name,"Conv",attribute,inputs,outputs){}
-            virtual ~ConvNode()=default;
+            ~ConvNode()=default;
+            void forward();
     };
 }
 

@@ -5,12 +5,13 @@
 namespace cel{
     class GlobalAveragePoolNode: public Node{
         public:
-            GlobalAveragePoolNode()=default;
+            GlobalAveragePoolNode():Node(){}
             GlobalAveragePoolNode(const std::string& name):Node(name,"GlobalAveragePool"){}
             GlobalAveragePoolNode(const std::string& name,const Attribute& attribute):Node(name,"GlobalAveragePool",attribute){}
             GlobalAveragePoolNode(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
                 :Node(name,"GlobalAveragePool",attribute,inputs,outputs){}
-            virtual ~GlobalAveragePoolNode()=default;
+            ~GlobalAveragePoolNode()=default;
+            void forward();
     };
 }
 

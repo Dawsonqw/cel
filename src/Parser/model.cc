@@ -244,6 +244,13 @@ void cel::Model::topological_sort() {
     }
 }
 
-void cel::Model::forward() {
+void cel::Model::forward(std::map<std::string,Tensor<float>>& tensors){
     this->topological_sort();
+    LOG(INFO)<<m_name<<" forward start";
+    while (!m_topo_seq.empty())
+    {
+        node_ptr node = m_topo_seq.front();
+        node->forward();
+        m_topo_seq.pop();
+    }
 }

@@ -1,6 +1,6 @@
 #include "Parser/node.hpp"
 
-void cel::Node::set_name(const std::string &name)
+void cel::Node::set_name(const std::string &name) 
 {
     m_name=name;
 }
@@ -65,4 +65,6 @@ const int32_t cel::Node::get_output_edge_num() const {
     return m_output_edges.size();
 }
 
-void cel::Node::parse() {}
+void cel::Node::forward() {
+    LOG(INFO)<<"node type:"<<m_type<<" name:"<<m_name<<" forward";
+}
