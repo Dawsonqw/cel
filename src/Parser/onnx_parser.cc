@@ -366,39 +366,41 @@ void cel::OnnxParser::build_graph(Model* model) {
 }
 
 template<typename T>
-static std::vector<T> extractDataFromTensor(const ::google::protobuf::RepeatedField<T>& field) {
-    return std::vector<T>(field.begin(), field.end());
-}
-
-template<typename T>
 std::vector<T> cel::OnnxParser::parse_tensor(const onnx::TensorProto& tensor,OnnxType datatype){
     std::vector<T> data;
-    switch (datatype) {
-        case OnnxType::FLOAT:
-            data = extractDataFromTensor<float>(tensor.float_data());
-            break;
-        case OnnxType::INT64:
-            // data = extractDataFromTensor<int64_t>(tensor.int64_data());
-            return extractDataFromTensor<int64_t>(tensor.int64_data());
-            break;
-        case OnnxType::INT32:
-            data = extractDataFromTensor<int32_t>(tensor.int32_data());
-            break;
-        // TODO
-        default:
-            LOG(WARNING) << "Unsupported data type: " << tensor.data_type();
-            break;
-    }
-
     if (!tensor.raw_data().empty()) {
         const size_t elem_size = sizeof(T);
         const size_t data_size = tensor.raw_data().size();
         const size_t num_elements = data_size / elem_size;
         LOG_IF(FATAL, data_size % elem_size != 0) << "Raw data size is not a multiple of element size.";
+        LOG(INFO)<<"data size:"<<num_elements;
         data.resize(num_elements);
         std::memcpy(data.data(), tensor.raw_data().data(), data_size);
+    }else{
+        size_t num_elements=0;
+        switch (datatype)
+        {
+        case OnnxType::FLOAT:
+            num_elements = tensor.float_data_size();
+            data.resize(num_elements);
+            std::memcpy(data.data(), tensor.float_data().data(), num_elements * sizeof(float));
+            break;
+        case OnnxType::INT64:
+            num_elements = tensor.int64_data_size();
+            data.resize(num_elements);
+            std::memcpy(data.data(), tensor.int64_data().data(), num_elements * sizeof(int64_t));
+            break;
+        case OnnxType::INT32:
+            num_elements = tensor.int32_data_size();
+            data.resize(num_elements);
+            std::memcpy(data.data(), tensor.int32_data().data(), num_elements * sizeof(int32_t));
+            break;
+        default:
+            LOG(WARNING)<<"Data type "<<get_onnx_type(datatype)<<" not supported now!";
+            break;
+        }
     }
-    LOG(ERROR)<< "Failed to parse tensor data";
+    return data;
 }
 
 std::any cel::OnnxParser::parse_attribute(const onnx::AttributeProto &attr) {

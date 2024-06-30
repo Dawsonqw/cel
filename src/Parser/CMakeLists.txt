@@ -16,3 +16,4 @@ set(
 )
 
 add_library(onnx_parser STATIC ${_sources})
+add_subdirectory(Compute)
