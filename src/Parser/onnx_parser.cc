@@ -1,4 +1,5 @@
 #include "Parser/onnx_parser.hpp"
+#include <algorithm>
 #include <filesystem> 
 
 void cel::OnnxParser::parse(Model* model)
@@ -97,12 +98,6 @@ void cel::OnnxParser::parse_inoutput(Model *model) {
             attribute.insert({shape,dims});
             node->set_attribute(attribute);
 
-            // edge_vec outputs;
-            // edge_ptr edge=std::make_shared<Edge>(input.name(),node,0,nullptr,0);
-            // model->add_edge(edge->index(),edge);
-            // outputs.push_back(edge);
-            // node->set_edge_outputs(outputs);
-
             model->add_node(node->name(),node);
             LOG(INFO)<<node->name()<<" added to model";
     }
@@ -133,12 +128,6 @@ void cel::OnnxParser::parse_inoutput(Model *model) {
         attribute.insert({shape,dims});
         node->set_attribute(attribute);
 
-        // edge_vec inputs;
-        // edge_ptr edge=std::make_shared<Edge>(output.name(),nullptr,0,node,0);
-        // model->add_edge(edge->index(),edge);
-        // inputs.push_back(edge);
-        // node->set_edge_inputs(inputs);
-
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
     }
@@ -157,25 +146,29 @@ void cel::OnnxParser::parse_initializer(Model* model){
         attribute.insert({tensor_type,onnx_type});
         
         std::string shape="shape";
-        std::vector<int64_t> dims;
+        std::vector<int32_t> dims;
         for (const auto& dim : initializer.dims()) {
             dims.push_back(dim);
         }
         attribute.insert({shape,dims});
 
         std::string data="data";
-        std::vector<float> data_vec;
-        for (const auto& data_val : initializer.float_data()) {
-            data_vec.push_back(data_val);
+        if(onnx_type==OnnxType::FLOAT)
+        {
+            std::vector<float> data_vec=parse_tensor<float>(initializer,onnx_type);
+            attribute.insert({data,data_vec});
+        }else if(onnx_type==OnnxType::INT64)
+        {
+            std::vector<int64_t> data_vec=parse_tensor<int64_t>(initializer,onnx_type);
+            attribute.insert({data,data_vec});
+        }else if(onnx_type==OnnxType::INT32)
+        {
+            std::vector<int32_t> data_vec=parse_tensor<int32_t>(initializer,onnx_type);
+            attribute.insert({data,data_vec});
+        }else{
+            LOG(WARNING)<<"Initializer "<<initializer.name()<<" has unsupported data type!";
         }
-        attribute.insert({data,data_vec});
         node->set_attribute(attribute);
-
-        // edge_ptr edge=std::make_shared<Edge>(initializer.name(),node,0,nullptr,0);
-        // edge_vec outputs;
-        // outputs.push_back(edge);
-        // model->add_edge(edge->index(),edge);
-        // node->set_edge_outputs(outputs);
 
         model->add_node(node->name(),node);
         LOG(INFO)<<node->name()<<" added to model";
@@ -301,6 +294,8 @@ void cel::OnnxParser::parse_nodes(Model *model) {
         LOG_IF(FATAL,model->is_edgeEixst(input.name())==false)<<"Edge "<<input.name()<<" not found!";
         edge_vec outputs=model->get_edge(input.name());
         node->set_edge_outputs(outputs);
+        LOG_IF(ERROR,outputs.size()!=1)<<input.name()<<" has "<<outputs.size()<<" outputs";
+        model->add_input(input.name(),outputs[0]);
     }
     for(const auto& output : m_model.graph().output())
     {
@@ -309,6 +304,8 @@ void cel::OnnxParser::parse_nodes(Model *model) {
         LOG_IF(FATAL,model->is_edgeEixst(output.name())==false)<<"Edge "<<output.name()<<" not found!";
         edge_vec inputs=model->get_edge(output.name());
         node->set_edge_inputs(inputs);
+        LOG_IF(ERROR,inputs.size()!=1)<<output.name()<<" has "<<inputs.size()<<" inputs";
+        model->add_output(output.name(),inputs[0]);
     }
     for(const auto& initializer : m_model.graph().initializer())
     {
@@ -366,6 +363,42 @@ void cel::OnnxParser::build_graph(Model* model) {
 
     LOG(INFO)<<model->name()<<" graph built successfully!";
     LOG(INFO)<<model->name()<<" has "<<model->get_node_num()<<" nodes and "<<model->get_edge_num()<<" edges";
+}
+
+template<typename T>
+static std::vector<T> extractDataFromTensor(const ::google::protobuf::RepeatedField<T>& field) {
+    return std::vector<T>(field.begin(), field.end());
+}
+
+template<typename T>
+std::vector<T> cel::OnnxParser::parse_tensor(const onnx::TensorProto& tensor,OnnxType datatype){
+    std::vector<T> data;
+    switch (datatype) {
+        case OnnxType::FLOAT:
+            data = extractDataFromTensor<float>(tensor.float_data());
+            break;
+        case OnnxType::INT64:
+            // data = extractDataFromTensor<int64_t>(tensor.int64_data());
+            return extractDataFromTensor<int64_t>(tensor.int64_data());
+            break;
+        case OnnxType::INT32:
+            data = extractDataFromTensor<int32_t>(tensor.int32_data());
+            break;
+        // TODO
+        default:
+            LOG(WARNING) << "Unsupported data type: " << tensor.data_type();
+            break;
+    }
+
+    if (!tensor.raw_data().empty()) {
+        const size_t elem_size = sizeof(T);
+        const size_t data_size = tensor.raw_data().size();
+        const size_t num_elements = data_size / elem_size;
+        LOG_IF(FATAL, data_size % elem_size != 0) << "Raw data size is not a multiple of element size.";
+        data.resize(num_elements);
+        std::memcpy(data.data(), tensor.raw_data().data(), data_size);
+    }
+    LOG(ERROR)<< "Failed to parse tensor data";
 }
 
 std::any cel::OnnxParser::parse_attribute(const onnx::AttributeProto &attr) {

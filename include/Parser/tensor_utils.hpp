@@ -336,5 +336,5 @@ template <typename T>
 std::shared_ptr<Tensor<T>> TensorClone(std::shared_ptr<Tensor<T>> tensor) {
   return std::make_shared<Tensor<T>>(*tensor);
 }
-}  // namespace kuiper_infer
-#endif  // KUIPER_INFER_TENSOR_UTIL_H
+}  
+#endif 

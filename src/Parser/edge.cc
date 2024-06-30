@@ -50,11 +50,18 @@ void cel::Edge::set_index(const std::string &index)
     m_index=index;
 }
 
-void cel::Edge::add_dst(node_ptr dst, uint32_t output_index) {
-    // if(m_dst!=nullptr)
-    // {
-    //     m_dsts.push_back(std::make_pair(m_dst,m_output_index));
-    //     m_dst=nullptr;
-    // }
-    // m_dsts.push_back(std::make_pair(dst,output_index));
+void cel::Edge::set_data(const tensor_vec<float> &data_ptr) {
+    m_data = data_ptr;
+}
+
+bool cel::Edge::has_data() const { 
+    return !m_data.empty();
+ }
+
+void cel::Edge::release_data() {
+
+}
+
+const cel::tensor_vec<float> cel::Edge::data() const { 
+    return m_data; 
 }

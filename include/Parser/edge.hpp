@@ -25,7 +25,11 @@ namespace cel{
             void set_dst(node_ptr dst);
             void set_output_index(uint32_t output_index);
             void set_index(const std::string& index);
-            void add_dst(node_ptr dst,uint32_t output_index);
+
+            void set_data(const tensor_vec<float>& data);
+            bool has_data() const;
+            void release_data();
+            const tensor_vec<float> data() const;
 
         private:
             // 唯一索引
@@ -38,7 +42,7 @@ namespace cel{
             node_ptr m_dst;
             // 目标节点对应的输入索引
             uint32_t m_output_index;
-            Tensor<float> m_data;
+            tensor_vec<float> m_data;
     };
 }
 #endif

@@ -52,6 +52,8 @@ namespace cel{
 
             void build_graph(Model* model);
 
+            template<typename T>
+            static std::vector<T> parse_tensor(const onnx::TensorProto& tensor,OnnxType datatype);
             static std::shared_ptr<cel::Node> create_node(const std::string& node_type);
             static std::any parse_attribute(const onnx::AttributeProto& attr);
             static onnx::AttributeProto to_attribute(const std::string& name,const std::any& value);
@@ -66,6 +68,7 @@ namespace cel{
             // key为edge的名称，value以edge作为输出节点名称，以及对应于输出节点的index
             std::map<std::string,std::vector<std::pair<std::string,int32_t>>> m_edge_outputs;
     };
-}
+
+    }  // namespace cel
 
 #endif

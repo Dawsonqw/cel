@@ -12,9 +12,4 @@ TEST(OnnxParser, test_onnx_parser){
     cel::Model model;
     cel::OnnxParser parser(file);
     parser.parse(&model);
-    std::map<std::string,cel::Tensor<float>> inputs;
-    cel::Tensor<float> input_tensor({3,224,224});
-    input_tensor.RandU(-1.0f,1.0f);
-    inputs["input"]=input_tensor;
-    model.forward(inputs);
 }

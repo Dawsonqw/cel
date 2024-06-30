@@ -12,6 +12,7 @@ namespace cel{
                 :Node(name,"Input",attribute,inputs,outputs){}
             ~InputNode()=default;
             void forward();
+            void set_data(const std::string& name,const tensor_vec<float>& data);
     };
 }
 

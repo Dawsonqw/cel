@@ -10,16 +10,17 @@ namespace cel{
     template<typename T=double>
     class Tensor{
         public:
+            explicit Tensor() = default;
             explicit Tensor(T* raw_ptr, int32_t size);
             explicit Tensor(T* raw_ptr, int32_t rows, int32_t cols);
             explicit Tensor(T* raw_ptr, int32_t channels, int32_t rows, int32_t cols);
             explicit Tensor(T* raw_ptr, const std::vector<int32_t>& shapes);
-            explicit Tensor() = default;
             explicit Tensor(int32_t channels, int32_t rows, int32_t cols);
             explicit Tensor(int32_t size);
             explicit Tensor(int32_t rows, int32_t cols);
             explicit Tensor(const std::vector<int32_t>& shapes);
             ~Tensor();
+
             int32_t rows() const;
             int32_t cols() const;
             int32_t channels() const;
@@ -55,6 +56,7 @@ namespace cel{
     };
 }
 
+// armadilloe是列主序，因此size被设置在cols上
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t size) {
   CHECK_NE(raw_ptr, nullptr);
@@ -66,54 +68,37 @@ template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t rows, int32_t cols) {
   CHECK_NE(raw_ptr, nullptr);
   this->m_data = arma::Cube<T>(raw_ptr, rows, cols, 1, false, true);
-  if (rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  }
+  this->m_shape = std::vector<int32_t>{rows, cols};
 }
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t channels, int32_t rows, int32_t cols) {
   CHECK_NE(raw_ptr, nullptr);
   this->m_data = arma::Cube<T>(raw_ptr, rows, cols, channels, false, true);
-  if (channels == 1 && rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else if (channels == 1) {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{channels, rows, cols};
-  }
+  this->m_shape = std::vector<int32_t>{channels, rows, cols};
 }
 
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, const std::vector<int32_t>& shapes) {
-  CHECK_EQ(shapes.size(), 3);
-  int32_t channels = shapes.at(0);
-  int32_t rows = shapes.at(1);
-  int32_t cols = shapes.at(2);
-
-  if (channels == 1 && rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else if (channels == 1) {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{channels, rows, cols};
+  CHECK_NE(raw_ptr, nullptr);
+  CHECK_GT(shapes.size(),0);
+  this->m_shape = shapes;
+  if(shapes.size()==1){
+    this->m_data=arma::Cube<T>(raw_ptr,1,shapes.at(0),1,false,true);
+  }else if(shapes.size()==2){
+    this->m_data=arma::Cube<T>(raw_ptr,shapes.at(0),shapes.at(1),1,false,true);
+  }else if(shapes.size()==3){
+    this->m_data=arma::Cube<T>(raw_ptr,shapes.at(1),shapes.at(2),shapes.at(0),false,true);
   }
-
-  this->m_data = arma::Cube<T>(raw_ptr, rows, cols, channels, false, true);
+  else{
+    LOG(ERROR)<<"shape size must be less than 3";
+  }
 }
 
 template <typename T>
 cel::Tensor<T>::Tensor(int32_t channels, int32_t rows, int32_t cols) {
   m_data = arma::Cube<T>(rows, cols, channels);
-  if (channels == 1 && rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else if (channels == 1) {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{channels, rows, cols};
-  }
+  this->m_shape = std::vector<int32_t>{channels, rows, cols};
 }
 
 template <typename T>
@@ -125,38 +110,23 @@ cel::Tensor<T>::Tensor(int32_t size) {
 template <typename T>
 cel::Tensor<T>::Tensor(int32_t rows, int32_t cols) {
   m_data = arma::Cube<T>(rows, cols, 1);
-  if (rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  }
+  this->m_shape = std::vector<int32_t>{rows, cols};
 }
 
 template <typename T>
 cel::Tensor<T>::Tensor(const std::vector<int32_t>& shapes) {
   CHECK(!shapes.empty() && shapes.size() <= 3);
 
-  int32_t remaining = 3 - shapes.size();
-  std::vector<int32_t> shapes_(3, 1);
-  std::copy(shapes.begin(), shapes.end(), shapes_.begin() + remaining);
-
-  int32_t channels = shapes_.at(0);
-  int32_t rows = shapes_.at(1);
-  int32_t cols = shapes_.at(2);
+  int32_t channels = shapes.at(0);
+  int32_t rows = shapes.at(1);
+  int32_t cols = shapes.at(2);
 
   m_data = arma::Cube<T>(rows, cols, channels);
-  if (channels == 1 && rows == 1) {
-    this->m_shape = std::vector<int32_t>{cols};
-  } else if (channels == 1) {
-    this->m_shape = std::vector<int32_t>{rows, cols};
-  } else {
-    this->m_shape = std::vector<int32_t>{channels, rows, cols};
-  }
+  this->m_shape = std::vector<int32_t>{channels, rows, cols};
 }
 
 template <typename T>
 cel::Tensor<T>::~Tensor(){
-  LOG(INFO)<<"Tensor is destructed";
 }
 
 template <typename T>
@@ -308,21 +278,20 @@ void cel::Tensor<T>::Flatten(bool row_major) {
 template <typename T>
 void cel::Tensor<T>::RandN(T mean, T var)
 {
+  LOG(ERROR) << "Not implemented yet!";
 }
 
 template <typename T>
 void cel::Tensor<T>::RandU(T min, T max)
 {
+  LOG(ERROR) << "Not implemented yet!";
 }
-
 
 template <typename T>
 void cel::Tensor<T>::Ones() {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   this->Fill(T{1});
 }
-
-
 
 template <typename T>
 void cel::Tensor<T>::Transform(const std::function<T(T)> &filter)
@@ -334,8 +303,6 @@ void cel::Tensor<T>::Transform(const std::function<T(T)> &filter)
 template <typename T>
 const std::vector<int32_t>& cel::Tensor<T>::raw_shapes() const {
   CHECK(!this->m_shape.empty());
-  CHECK_LE(this->m_shape.size(), 3);
-  CHECK_GE(this->m_shape.size(), 1);
   return this->m_shape;
 }
 

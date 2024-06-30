@@ -11,13 +11,10 @@
 namespace cel{
     class Model{
         public:
-            using node_map=std::map<std::string,node_ptr>;
-            using edge_map=std::map<std::string,edge_vec>;
-        public:
             Model()=default;
             Model(const std::string& name):m_name(name),m_node_map(),m_edge_map(),m_attribute(){}
             Model(const std::string& name,const Attribute& attribute):m_name(name),m_node_map(),m_edge_map(),m_attribute(attribute){}
-            Model(const std::string& name,const Attribute& attribute,const edge_vec& inputs,const edge_vec& outputs)
+            Model(const std::string& name,const Attribute& attribute,const edge_map_t& inputs,const edge_map_t& outputs)
                 :m_name(name),m_node_map(),m_edge_map(),m_attribute(attribute),m_model_inputs(inputs),m_model_outputs(outputs){}
             virtual ~Model()=default;
 
@@ -45,30 +42,32 @@ namespace cel{
             bool update_node(const std::string& name,node_ptr node);
             bool update_edge(const std::string& name,edge_vec edge);
 
-            bool add_input(edge_ptr input,int insert_point=-1);
-            bool add_output(edge_ptr output,int insert_point=-1);
+            bool add_input(const std::string& name,edge_ptr input);
+            bool add_output(const std::string& name,edge_ptr output);
 
             bool del_input(const std::string& name);
             bool del_output(const std::string& name);
 
-            void set_inputs(const edge_vec& inputs);
-            const edge_vec& inputs() const;
+            void set_inputs(const edge_map_t& inputs);
+            const edge_ptr& input(const std::string& name) const;
+            const edge_map_t& inputs() const;
 
-            void set_outputs(const edge_vec& outputs);
-            const edge_vec& outputs() const;
+            void set_outputs(const edge_map_t& outputs);
+            const edge_map_t& outputs(const std::string& name) const;
+            const edge_map_t& outputs() const;
 
             bool verify() const;
                 
             void topological_sort();
 
-            void forward(std::map<std::string,Tensor<float>>& tensors);
+            void forward(std::map<std::string,tensor_vec<float>>& tensors);
         private:
-            node_map m_node_map;
+            node_map_t m_node_map;
             edge_map m_edge_map;
             std::string m_name;
             Attribute m_attribute;
-            edge_vec m_model_inputs;
-            edge_vec m_model_outputs;
+            edge_map_t m_model_inputs;
+            edge_map_t m_model_outputs;
             std::queue<node_ptr> m_topo_seq;
     };
 }

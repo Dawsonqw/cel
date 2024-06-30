@@ -113,66 +113,54 @@ bool cel::Model::update_edge(const std::string &name, edge_vec edge)
     return true;
 }
 
-bool cel::Model::add_input(edge_ptr input,int insert_point)
-{
-    if(insert_point==-1){
-        m_model_inputs.push_back(input);
-        return true;
-    }
-    if (insert_point > m_model_inputs.size() || std::find(m_model_inputs.begin(), m_model_inputs.end(), input) != m_model_inputs.end())
-    {
+bool cel::Model::add_input(const std::string& name,edge_ptr input){
+    if(m_model_inputs.find(name)!=m_model_inputs.end()){
         return false;
     }
-    m_model_inputs.insert(m_model_inputs.begin() + insert_point, input);
+    m_model_inputs[name]=input;
     return true;
 }
 
-bool cel::Model::add_output(edge_ptr output,int insert_point)
-{
-    if(insert_point==-1){
-        m_model_outputs.push_back(output);
-        return true;
-    }
-    if (insert_point > m_model_outputs.size() || std::find(m_model_outputs.begin(), m_model_outputs.end(), output) != m_model_outputs.end())
-    {
+bool cel::Model::add_output(const std::string& name,edge_ptr output){
+    if(m_model_outputs.find(name)!=m_model_outputs.end()){
         return false;
     }
-    m_model_outputs.insert(m_model_outputs.begin() + insert_point, output);
+    m_model_outputs[name]=output;
     return true;
 }
 
 bool cel::Model::del_input(const std::string &name)
 {
-    for (auto iter = m_model_inputs.begin(); iter != m_model_inputs.end(); ++iter)
-    {
+    if(m_model_inputs.find(name)==m_model_inputs.end()){
+        return false;
     }
-    return true;
+    m_model_inputs.erase(name);
 }
 
 bool cel::Model::del_output(const std::string &name)
 {
-    for (auto iter = m_model_outputs.begin(); iter != m_model_outputs.end(); ++iter)
-    {
+    if(m_model_outputs.find(name)==m_model_outputs.end()){
+        return false;
     }
-    return true;
+    m_model_outputs.erase(name);
 }
 
-void cel::Model::set_inputs(const edge_vec &inputs)
+void cel::Model::set_inputs(const edge_map_t &inputs)
 {
     m_model_inputs=inputs;
 }
 
-const cel::edge_vec &cel::Model::inputs() const
+const cel::edge_map_t &cel::Model::inputs() const
 {
     return m_model_inputs;
 }
 
-void cel::Model::set_outputs(const edge_vec &outputs)
+void cel::Model::set_outputs(const edge_map_t &outputs)
 {
     m_model_outputs=outputs;
 }
 
-const cel::edge_vec &cel::Model::outputs() const
+const cel::edge_map_t &cel::Model::outputs() const
 {
     return m_model_outputs;
 }
@@ -242,11 +230,21 @@ void cel::Model::topological_sort() {
             return;
         }
     }
+    LOG(INFO)<<"Topological sort done";
 }
 
-void cel::Model::forward(std::map<std::string,Tensor<float>>& tensors){
+void cel::Model::forward(std::map<std::string,tensor_vec<float>>& tensors){
     this->topological_sort();
     LOG(INFO)<<m_name<<" forward start";
+    for(const auto& input_info:m_model_inputs){
+        if(tensors.find(input_info.first)==tensors.end()){
+            LOG(ERROR)<<"Input tensor "<<input_info.first<<" is not found";
+            return;
+        }
+        for(auto& edge:m_edge_map[input_info.first]){
+            edge->set_data(tensors[input_info.first]);
+        }
+    }
     while (!m_topo_seq.empty())
     {
         node_ptr node = m_topo_seq.front();

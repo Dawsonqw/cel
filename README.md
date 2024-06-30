@@ -16,6 +16,7 @@ TODO:
 # 依赖安装版本
 ```shell
 # cmake version 3.28.3 
+# armadillo version 12.8.4
 # glog version 0.7.0
 # gtest version 1.14.0
 # proto version 3.21.12
