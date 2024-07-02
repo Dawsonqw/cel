@@ -5,7 +5,6 @@
 
 namespace cel{
 
-    // 目前仅支持NCHW的数据排布
     template<typename T>
     void conv_compute(const tensor_vec<T>&input,const tensor_vec<T>&kernel,const tensor_vec<T>& bias,tensor_vec<T>&output,
                     const std::vector<int32_t>&padding,const std::vector<int32_t>&stride,const std::vector<int32_t>&dilation,
@@ -33,7 +32,7 @@ namespace cel{
 
         for(int32_t batch_id=0;batch_id<batch;batch_id++){
             for(int32_t group_id=0;group_id<group;group_id++){
-                im2col();
+                // im2col();
             }
         }
 
@@ -41,8 +40,12 @@ namespace cel{
     }
 
     template<typename T>
-    void im2col(
-    ){
+    void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
+                const std::vector<int32_t>&padding,const std::vector<int32_t>&stride,const std::vector<int32_t>&dilation,
+                const std::vector<int32_t>&kernel_shape){
+        // im2col计算单个input,input是一个batch,同时Tensor为列主序
+        int32_t stride_h=stride[0];
+        int32_t stride_w=stride[1];
 
     }
 
