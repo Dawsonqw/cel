@@ -113,4 +113,8 @@ TEST(TensorTest, test_tensor_data){
             }
         }
     }
+
+    tensor_3d.set_data(0,0,0,22.2);
+    LOG(INFO)<<"tensor[0,0,0]:"<<tensor_3d.at(0,0,0);
+
 }

@@ -54,7 +54,9 @@ const int32_t cel::Node::get_input_edge_num() const {
     return m_input_edges.size();
 }
 
-void cel::Node::set_edge_outputs(const cel::edge_vec &outputs) { m_output_edges = outputs; }
+void cel::Node::set_edge_outputs(const cel::edge_vec &outputs) { 
+    m_output_edges = outputs; 
+}
 
 const cel::edge_vec &cel::Node::outputs() const
 {

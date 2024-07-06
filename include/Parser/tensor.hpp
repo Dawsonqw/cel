@@ -42,6 +42,9 @@ namespace cel{
             void Fill(const std::vector<T>& values, bool row_major = true);
             std::vector<T> values(bool row_major = true);
             void set_size(const std::vector<int32_t>& shapes);
+            void set_data(int32_t channels, int32_t rows, int32_t cols,T value);
+            void set_data(int32_t rows, int32_t cols,T value);
+            void set_data(int32_t index,T value);
             void Ones();
             void RandN(T mean = 0, T var = 1);
             void RandU(T min = 0, T max = 1);
@@ -357,6 +360,31 @@ template <typename T> inline void cel::Tensor<T>::set_size(const std::vector<int
   else{
     LOG(ERROR)<<"shape size must be less than 3";
   }
+}
+
+template <typename T>
+inline void cel::Tensor<T>::set_data(int32_t channels, int32_t rows, int32_t cols,T value) {
+  CHECK_GE(channels, 0);
+  CHECK_GE(rows, 0);
+  CHECK_GE(cols, 0);
+  CHECK_LE(channels, this->channels());
+  CHECK_LE(rows, this->rows());
+  CHECK_LE(cols, this->cols());
+  this->m_data(channels, rows, cols) = value;
+}
+
+template <typename T> inline void cel::Tensor<T>::set_data(int32_t rows, int32_t cols, T value) {
+  CHECK_GE(rows, 0);
+  CHECK_GE(cols, 0);
+  CHECK_LE(rows, this->rows());
+  CHECK_LE(cols, this->cols());
+  this->m_data(0, rows, cols) = value;
+}
+
+template <typename T> inline void cel::Tensor<T>::set_data(int32_t index, T value) {
+  CHECK_GE(index, 0);
+  CHECK_LT(index, this->size());
+  this->m_data.at(index) = value;
 }
 
 template <typename T>

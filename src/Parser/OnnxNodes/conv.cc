@@ -3,7 +3,7 @@
 #include "Parser/Compute/conv.hpp"
 
 void cel::ConvNode::forward(){
-    // 解析属性
+    LOG(INFO)<<name()<<" forward start";
     Attribute attr=attribute();
     std::vector<int64_t> pads;
    std::any pads_any=attr.find("pads");
@@ -53,9 +53,9 @@ void cel::ConvNode::forward(){
     tensor_vec<float> output;
     conv_compute<float>(input,kernel,bias,output,pads,stride,dilation,kernel_shape,group);
 
-    edge_vec output_edges;
-    edge_ptr output_edge=std::make_shared<Edge>();
-    output_edge->set_data(output);
-    output_edges.push_back(output_edge);
-    this->set_edge_outputs(output_edges);
+     // 设置推理结果
+     for(auto& output_edge:outputs()){
+          output_edge->set_data(output);
+     }
+    LOG(INFO)<<name()<<" forward done";
 }
