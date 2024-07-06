@@ -41,6 +41,7 @@ namespace cel{
             void Fill(T value);
             void Fill(const std::vector<T>& values, bool row_major = true);
             std::vector<T> values(bool row_major = true);
+            void set_size(const std::vector<int32_t>& shapes);
             void Ones();
             void RandN(T mean = 0, T var = 1);
             void RandU(T min = 0, T max = 1);
@@ -340,6 +341,24 @@ void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major)
   }
 }
 
+template <typename T> inline void cel::Tensor<T>::set_size(const std::vector<int32_t> &shapes) {
+  if(shapes.size()==1){
+    this->m_data.set_size(1,shapes.at(0),1);
+    this->m_shape = {shapes.at(0)};
+  }
+  else if(shapes.size()==2){
+    this->m_data.set_size(shapes.at(0),shapes.at(1),1);
+    this->m_shape = {shapes.at(0),shapes.at(1)};
+  }
+  else if(shapes.size()==3){
+    this->m_data.set_size(shapes.at(1),shapes.at(2),shapes.at(0));
+    this->m_shape = {shapes.at(0),shapes.at(1),shapes.at(2)};
+  }
+  else{
+    LOG(ERROR)<<"shape size must be less than 3";
+  }
+}
+
 template <typename T>
 T* cel::Tensor<T>::raw_ptr() {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
@@ -377,4 +396,6 @@ std::vector<T> cel::Tensor<T>::values(bool row_major) {
   }
   return values;
 }
+
+
 #endif
