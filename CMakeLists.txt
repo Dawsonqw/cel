@@ -17,6 +17,9 @@ find_package(MLIR REQUIRED CONFIG)
 find_package (glog 0.7.0 REQUIRED)
 find_package(GTest)
 find_package(Protobuf REQUIRED)
+find_package(Armadillo REQUIRED)
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
 
 add_definitions(-DGLOG_USE_GLOG_EXPORT)
  
@@ -33,6 +36,8 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "Using glogConfig.cmake in: ${glog_DIR}")
 message(STATUS "Using GTestConfig.cmake in: ${GTest_DIR}")
 message(STATUS "Using glogConfig.cmake in: ${glog_DIR}")
+message(STATUS "Using ArmadilloConfig.cmake in: ${Armadillo_DIR}")
+
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")

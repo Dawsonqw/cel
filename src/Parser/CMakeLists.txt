@@ -15,5 +15,5 @@ set(
     glog::glog
 )
 
-add_library(onnx_parser STATIC ${_sources})
 add_subdirectory(Compute)
+add_library(onnx_parser STATIC ${_sources})

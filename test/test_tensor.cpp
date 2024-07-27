@@ -45,6 +45,7 @@ TEST(TensorTest, test_tensor_empty){
 }
 
 TEST(TensorTest, test_tensor_data){
+    // 列优先存储
     std::vector<float> data={1,2,3,4,5,6};
     cel::Tensor<float> tensor(data.data(),{1,2,3});
     // 1 3 5
@@ -93,8 +94,15 @@ TEST(TensorTest, test_tensor_data){
         LOG(INFO)<<"tensor["<<i<<"]:"<<tensor_3d.index(i);
     }
     for(int i=0;i<tensor_3d.channels();i++){
-        for(int j=0;j<tensor_3d.rows();j++){
-            for(int k=0;k<tensor_3d.cols();k++){
+        // 先行后列，不是顺序访问原始数据，因为是列优先存储
+        // for(int j=0;j<tensor_3d.rows();j++){
+        //     for(int k=0;k<tensor_3d.cols();k++){
+        //         LOG(INFO)<<"tensor["<<i<<","<<j<<","<<k<<"]:"<<tensor_3d.at(i,j,k);
+        //     }
+        // }
+        // 先列后行，顺序访问原始数据
+        for(int k=0;k<tensor_3d.cols();k++){
+            for(int j=0;j<tensor_3d.rows();j++){
                 LOG(INFO)<<"tensor["<<i<<","<<j<<","<<k<<"]:"<<tensor_3d.at(i,j,k);
             }
         }
@@ -116,5 +124,6 @@ TEST(TensorTest, test_tensor_data){
 
     tensor_3d.set_data(0,0,0,22.2);
     LOG(INFO)<<"tensor[0,0,0]:"<<tensor_3d.at(0,0,0);
-
+    tensor_3d.set_data(1,2,1,33.3);
+    LOG(INFO)<<"tensor[1,2,1]:"<<tensor_3d.at(1,2,1);
 }

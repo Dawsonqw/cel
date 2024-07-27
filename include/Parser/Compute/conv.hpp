@@ -2,6 +2,7 @@
 #define PARSER_COMPUTE_CONV_H
 #include "Parser/utils.hpp"
 #include "Parser/tensor.hpp"
+#include "Parser/tensor_utils.hpp"
 
 namespace cel{
 
@@ -10,47 +11,66 @@ namespace cel{
                     const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                     const std::vector<int64_t>&kernel_shape,int64_t group=1){
         int32_t batch=input.size();
-        // std::vector<int32_t> input_shape=input[0]->shapes();
-        // int32_t channel=input_shape[0];
-        // int32_t height=input_shape[1];
-        // int32_t width=input_shape[2];
+        LOG_IF(FATAL,batch<1)<<"input size must be greater than 1";
+        std::vector<int32_t> input_shape=input[0]->shapes();
+        int32_t channel=input_shape[0];
+        int32_t height=input_shape[1];
+        int32_t width=input_shape[2];
 
-        // int64_t kernel_channel=kernel_shape[0];
-        // int64_t kernel_height=kernel_shape[1];
+        int64_t kernel_width=kernel_shape[0];
+        int64_t kernel_height=kernel_shape[1];
 
-        // int64_t pad_top=pads[0];
-        // int64_t pad_bottom=pads[1];
-        // int64_t pad_left=pads[2];
-        // int64_t pad_right=pads[3];
+        int64_t pad_top=pads[0];
+        int64_t pad_bottom=pads[1];
+        int64_t pad_left=pads[2];
+        int64_t pad_right=pads[3];
 
-        // int64_t stride_h=stride[0];
-        // int64_t stride_w=stride[1];
+        int64_t stride_h=stride[0];
+        int64_t stride_w=stride[1];
 
-        // int64_t dilation_h=dilation[0];
-        // int64_t dilation_w=dilation[1];
+        int64_t dilation_h=dilation[0];
+        int64_t dilation_w=dilation[1];
 
-        // output.resize(batch);
+        // input
+        output.resize(batch);
+        tensor_vec<T> input_matrix;
+        input_matrix.resize(batch);
+        for(int32_t index=0;index<batch;index++){
+            std::shared_ptr<Tensor<T>> input_tensor=input[index];
+            std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
+            im2col(input_tensor,output_tensor,pads,stride,dilation,kernel_shape);
+            input_matrix[index]=output_tensor;
+        }
 
-        // for(int64_t batch_id=0;batch_id<batch;batch_id++){
-        //     for(int64_t group_id=0;group_id<group;group_id++){
-        //         std::shared_ptr<Tensor<T>> input_tensor=input[batch_id];
-        //         std::shared_ptr<Tensor<T>> input_col(new Tensor<T>());
-        //         im2col<T>(input_tensor,input_col,pads,stride,dilation,kernel_shape);
-        //         std::shared_ptr<Tensor<T>> output_tensor(new Tensor<T>());
-        //         output_tensor->set_size({kernel_channel,height,width});
-        //         output_tensor->Fill(0.0f);
-        //         for(int64_t kernel_id=0;kernel_id<kernel_channel;kernel_id++){
-        //             std::shared_ptr<Tensor<T>> kernel_tensor=kernel[group_id*kernel_channel+kernel_id];
-        //             // std::shared_ptr<Tensor<T>> bias_tensor=bias[group_id*kernel_channel+kernel_id];
-        //             // std::shared_ptr<Tensor<T>> output_col(new Tensor<T>());
-        //             // output_col->set_size({height,width});
-        //             // output_col->Fill(0.0f);
-        //             // output_tensor->data().slice(kernel_id)=kernel_tensor->data()*input_col->data();
-        //             // output_tensor->data().slice(kernel_id)+=bias_tensor->data();
-        //         }
-        //         output[batch_id]=output_tensor;
-        //     }
-        // }
+        // weight
+        int32_t kernel_batch=kernel.size();
+        LOG_IF(FATAL,kernel.size()<1)<<kernel.size()<<" kernel size must be greater than 1";
+        int32_t kernel_channel=kernel[0]->channels();
+        std::shared_ptr<Tensor<T>> kernel_matrix=std::make_shared<Tensor<T>>();
+        int32_t weight_height=kernel_channel*kernel_height*kernel_width;
+        int32_t weight_width=kernel_batch;
+
+        kernel_matrix->set_size({weight_height,weight_width});
+        for(int32_t w_index=0;w_index<weight_width;w_index++){
+            for(int32_t h_index=0;h_index<weight_height;h_index++){
+                int32_t channel_index=h_index/(kernel_height*kernel_width);
+                int32_t channel_offset=h_index%(kernel_height*kernel_width);
+                int32_t h_offset=channel_offset/kernel_width;
+                int32_t w_offset=channel_offset%kernel_width;
+                kernel_matrix->set_data(h_index,w_index,kernel[w_index]->at(channel_index,h_offset,w_offset));
+            }
+        }
+
+        tensor_vec<T> output_matrix;
+        output_matrix.resize(batch);
+        for(int32_t index=0;index<batch;index++){
+            std::shared_ptr<Tensor<T>> input_matrix_tensor=input_matrix[index];
+            std::shared_ptr<Tensor<T>> output_matrix_tensor=std::make_shared<Tensor<T>>();
+            output_matrix_tensor->set_size({input_matrix_tensor->rows(),kernel_matrix->cols()});
+            output_matrix_tensor=cel::matmul(input_matrix_tensor,kernel_matrix);
+            output_matrix[index]=output_matrix_tensor;
+        }
+
         LOG(INFO)<<"conv compute done";
     }
 
@@ -75,63 +95,67 @@ namespace cel{
         int output_h = (rows + 2 * pad_h - (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
         int output_w = (cols + 2 * pad_w - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
-        // 每次卷积的结果是一个kernel_h*kernel_w的矩阵，一共channels*kernel_h*kernel_w个矩阵
-        // 停留次数是output_h*output_w,即w方向移动output_w次，h方向移动output_h次
-        // 由于是列主序，所以将行数设为channels*kernel_h*kernel_w，列数设为output_h*output_w
-        int32_t col_h=channels*kernel_h*kernel_w;
-        int32_t col_w=output_h*output_w;
-        output->set_size({col_h,col_w});
+        int32_t output_height=output_h*output_w;
+        int32_t output_width=channels*kernel_h*kernel_w;
+        output->set_size({output_height,output_height});
 
-        for(int32_t h_index=0;h_index<col_h;h_index++){
-            for(int32_t w_index=0;w_index<col_w;w_index++){
+        for(int32_t h_index=0;h_index<output_height;h_index++){
+            for(int32_t w_index=0;w_index<output_width;w_index++){
+                int32_t channel_index=w_index/(kernel_h*kernel_w);
+                int32_t channel_offset=w_index%(kernel_h*kernel_w);
+                int32_t h_offset=channel_offset/kernel_w;
+                int32_t w_offset=channel_offset%kernel_w;
+                int32_t h_start = h_offset * dil_h - pad_h;
+                int32_t w_start = w_offset * dil_w - pad_w;
+                int32_t h=h_start+w_index/output_w*stride_h;
+                int32_t w=w_start+w_index%output_w*stride_w;
+                if(h>=0&&h<rows&&w>=0&&w<cols){
+                    output->set_data(h_index,w_index,input->at(channel_index,h,w));
+                }else{
+                    output->set_data(h_index,w_index,0);
+                }
             }
         }
+    }
 
-        // 使用set_data设置数据，用at获取数据
-        // for(int32_t channel_index=0;channel_index<channels;channel_index++){
-        //     for(int32_t move_w=0;move_w<output_w;move_w++){
-        //         for(int32_t move_h=0;move_h<output_h;move_h++){
-        //             int32_t h_start = move_h * stride_h - pad_h;
-        //             int32_t w_start = move_w * stride_w - pad_w;
-        //             int32_t h_end=h_start+kernel_h*dil_h;
-        //             int32_t w_end=w_start+kernel_w*dil_w;
-        //             int32_t output_num=output_w*move_h+move_w;
-        //             for(int32_t h=h_start;h<h_end;h+=dil_h){
-        //                 for(int32_t w=w_start;w<w_end;w+=dil_w){
-        //                     int32_t output_row=channel_index*kernel_h*kernel_w+(h-h_start)/dil_h*kernel_w+(w-w_start)/dil_w;
-        //                     if(h>=0&&h<rows&&w>=0&&w<cols){
-        //                         output->set_data(output_row,output_num,input->at(channel_index,h,w));
-        //                     }else{
-        //                         output->set_data(output_row,output_num,0);
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+    template<typename T>
+    void col2im(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
+                const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
+                const std::vector<int64_t>&kernel_shape){
+        int32_t channels=output->channels();
+        int32_t rows=output->rows();
+        int32_t cols=output->cols();
 
-        // for(int c=0;c<channels;c++){
-        //     for(int kh=0;kh<kernel_h;kh++){
-        //         for(int kw=0;kw<kernel_w;kw++){
-        //             int input_h_offset=c*rows*cols;
-        //             int output_h_offset=(c*kernel_h*kernel_w+kh*kernel_w+kw)*output_h*output_w;
+        int pad_h = pads[0];
+        int pad_w = pads[1];
+        int stride_h = stride[0];
+        int stride_w = stride[1];
+        int dil_h = dilation[0];
+        int dil_w = dilation[1];
+        int kernel_h = kernel_shape[0];
+        int kernel_w = kernel_shape[1];
 
-        //             for(int oh=0;oh<output_h;oh++){
-        //                 for(int ow=0;ow<output_w;ow++){
-        //                     int ih=oh*stride_h-pad_h+kh*dil_h;
-        //                     int iw=ow*stride_w-pad_w+kw*dil_w;
+        int output_h = (rows + 2 * pad_h - (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
+        int output_w = (cols + 2 * pad_w - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
-        //                     if(ih>=0&&ih<rows&&iw>=0&&iw<cols){
-        //                         output->data()[output_h_offset+oh*output_w+ow]=input->data()[input_h_offset+ih*cols+iw];
-        //                     }else{
-        //                         output->data()[output_h_offset+oh*output_w+ow]=0;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        int32_t output_height=output_h*output_w;
+        int32_t output_width=channels*kernel_h*kernel_w;
 
+        for(int32_t h_index=0;h_index<output_height;h_index++){
+            for(int32_t w_index=0;w_index<output_width;w_index++){
+                int32_t channel_index=w_index/(kernel_h*kernel_w);
+                int32_t channel_offset=w_index%(kernel_h*kernel_w);
+                int32_t h_offset=channel_offset/kernel_w;
+                int32_t w_offset=channel_offset%kernel_w;
+                int32_t h_start = h_offset * dil_h - pad_h;
+                int32_t w_start = w_offset * dil_w - pad_w;
+                int32_t h=h_start+w_index/output_w*stride_h;
+                int32_t w=w_start+w_index%output_w*stride_w;
+                if(h>=0&&h<rows&&w>=0&&w<cols){
+                    output->set_data(channel_index,h,w,input->at(h_index,w_index));
+                }
+            }
+        }
     }
 
     void conv_shape_infer(const std::vector<int32_t>&input_shape,const std::vector<int64_t>&kernel_shape,

@@ -370,7 +370,7 @@ inline void cel::Tensor<T>::set_data(int32_t channels, int32_t rows, int32_t col
   CHECK_LE(channels, this->channels());
   CHECK_LE(rows, this->rows());
   CHECK_LE(cols, this->cols());
-  this->m_data(channels, rows, cols) = value;
+  this->m_data(rows, cols, channels) = value;
 }
 
 template <typename T> inline void cel::Tensor<T>::set_data(int32_t rows, int32_t cols, T value) {
@@ -378,7 +378,7 @@ template <typename T> inline void cel::Tensor<T>::set_data(int32_t rows, int32_t
   CHECK_GE(cols, 0);
   CHECK_LE(rows, this->rows());
   CHECK_LE(cols, this->cols());
-  this->m_data(0, rows, cols) = value;
+  this->m_data(rows, cols, 0) = value;
 }
 
 template <typename T> inline void cel::Tensor<T>::set_data(int32_t index, T value) {

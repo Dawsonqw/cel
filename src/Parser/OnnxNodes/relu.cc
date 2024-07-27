@@ -10,6 +10,8 @@ void cel::ReluNode::forward(){
     tensor_vec<float> input=input_edge->data();
     tensor_vec<float> output;
 
+    relu_compute<float>(input,output);
+
     for(auto& output_edge:outputs()){
         output_edge->set_data(output);
     }

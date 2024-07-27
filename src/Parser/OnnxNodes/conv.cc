@@ -53,7 +53,6 @@ void cel::ConvNode::forward(){
     tensor_vec<float> output;
     conv_compute<float>(input,kernel,bias,output,pads,stride,dilation,kernel_shape,group);
 
-     // 设置推理结果
      for(auto& output_edge:outputs()){
           output_edge->set_data(output);
      }
