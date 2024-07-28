@@ -24,8 +24,8 @@ namespace cel {
     arma::Mat<T> mat_lhs(tensor_lhs->data().memptr(),tensor_lhs->rows(),tensor_lhs->cols(),false,true);
     arma::Mat<T> mat_rhs(tensor_rhs->data().memptr(),tensor_rhs->rows(),tensor_rhs->cols(),false,true);
     arma::Mat<T> mat_result=mat_lhs*mat_rhs;
-    // std::vector<int32_t> shape={mat_result.n_rows,mat_result.n_cols};
-    // return std::make_shared<Tensor<T>>(mat_result.memptr(),shape);
+    std::vector<int32_t> shape={mat_result.n_rows,mat_result.n_cols};
+    return std::make_shared<Tensor<T>>(mat_result.memptr(),shape);
   }
 
 }

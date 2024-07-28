@@ -20,8 +20,10 @@ find_package(Protobuf REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
+# find_package(OpenBLAS REQUIRED)
 
 add_definitions(-DGLOG_USE_GLOG_EXPORT)
+add_definitions(-DARMA_DONT_USE_WRAPPER)
  
 if (Protobuf_FOUND)
     MESSAGE(STATUS "PROTOBUF FOUNED, ${PROTOBUF_INCLUDE_DIR}")
@@ -31,12 +33,30 @@ else (Protobuf_FOUND)
     MESSAGE(FATAL_ERROR "PROTOBUF NOT FOUNED")
 endif (Protobuf_FOUND)
 
+
+if(BLAS_FOUND)
+    MESSAGE(STATUS "BLAS FOUNED, ${BLAS_INCLUDE_DIR}")
+    INCLUDE_DIRECTORIES(${BLAS_INCLUDE_DIR})
+    link_directories(${BLAS_LIBRARIES})
+else (BLAS_FOUND)
+    MESSAGE(FATAL_ERROR "BLAS NOT FOUNED")
+endif(BLAS_FOUND)
+
+if(LAPACK_FOUND)
+    MESSAGE(STATUS "LAPACK FOUNED, ${LAPACK_INCLUDE_DIR}")
+    INCLUDE_DIRECTORIES(${LAPACK_INCLUDE_DIR})
+    link_directories(${LAPACK_LIBRARIES})
+else (LAPACK_FOUND)
+    MESSAGE(FATAL_ERROR "LAPACK NOT FOUNED")
+endif(LAPACK_FOUND)
+
+
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "Using glogConfig.cmake in: ${glog_DIR}")
 message(STATUS "Using GTestConfig.cmake in: ${GTest_DIR}")
 message(STATUS "Using glogConfig.cmake in: ${glog_DIR}")
-message(STATUS "Using ArmadilloConfig.cmake in: ${Armadillo_DIR}")
+# message(STATUS "Using OpenBLASConfig.cmake in: ${OpenBLAS_DIR}")
 
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")

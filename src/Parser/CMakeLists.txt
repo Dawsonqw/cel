@@ -10,10 +10,5 @@ file(GLOB _sources
           OnnxNodes/*.cc
     )
 
-set(
-    LIBS
-    glog::glog
-)
-
 add_subdirectory(Compute)
-add_library(onnx_parser STATIC ${_sources})
+add_library(onnx_parser STATIC ${_sources}) 

@@ -50,13 +50,13 @@ set(
 # target_link_libraries(test_node PRIVATE ${TESTLIB})
 
 add_executable(test_tensor test_tensor.cpp)
-target_link_libraries(test_tensor PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} armadillo  blas lapack)
+target_link_libraries(test_tensor PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 # add_executable(test_onnx_parser test_onnx_parser.cpp)
 # target_link_libraries(test_onnx_parser PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} )
 
-# add_executable(test_onnx_forward test_onnx_forward.cpp)
-# target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG}  armadillo  mlpack  blas lapack)
+add_executable(test_onnx_forward test_onnx_forward.cpp)
+target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 # add_executable(test_arma test_arma.cpp)
 # target_link_libraries(test_arma PRIVATE  ${ARMADILLO_LIBRARIES}  ${GTEST_BOTH_LIBRARIES} glog::glog)
