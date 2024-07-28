@@ -31,60 +31,64 @@ namespace cel{
         int64_t dilation_h=dilation[0];
         int64_t dilation_w=dilation[1];
 
-        // input
-        output.resize(batch);
-        tensor_vec<T> input_matrix;
-        input_matrix.resize(batch);
+        int output_h = (height + pad_top+pad_bottom - (dilation_h * (kernel_height - 1) + 1)) / stride_h + 1;
+        int output_w = (width + pad_left+pad_right - (dilation_w * (kernel_width - 1) + 1)) / stride_w + 1;
+
+        int32_t output_height=output_h*output_w;
+        int32_t output_width=channel*kernel_height*kernel_width;
+
+        std::shared_ptr<cel::Tensor<T>> output_tensor=std::make_shared<cel::Tensor<T>>(batch,output_height,output_width);
+        output_tensor->Fill(static_cast<T>(0));
+
         for(int32_t index=0;index<batch;index++){
             std::shared_ptr<Tensor<T>> input_tensor=input[index];
-            std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
-            im2col(input_tensor,output_tensor,pads,stride,dilation,kernel_shape);
-            input_matrix[index]=output_tensor;
+            im2col(input_tensor,output_tensor,index,pads,stride,dilation,kernel_shape);
         }
+        output_tensor->Reshape({batch*output_height,output_width});
 
         // weight
+        LOG_IF(FATAL,kernel.size()<1)<<"kernel size must be greater than 1";
         int32_t kernel_batch=kernel.size();
-        LOG_IF(FATAL,kernel.size()<1)<<kernel.size()<<" kernel size must be greater than 1";
         int32_t kernel_channel=kernel[0]->channels();
-        std::shared_ptr<Tensor<T>> kernel_matrix=std::make_shared<Tensor<T>>();
-        int32_t weight_height=kernel_channel*kernel_height*kernel_width;
-        int32_t weight_width=kernel_batch;
-
-        kernel_matrix->set_size({weight_height,weight_width});
-        for(int32_t w_index=0;w_index<weight_width;w_index++){
-            for(int32_t h_index=0;h_index<weight_height;h_index++){
-                int32_t channel_index=h_index/(kernel_height*kernel_width);
-                int32_t channel_offset=h_index%(kernel_height*kernel_width);
-                int32_t h_offset=channel_offset/kernel_width;
-                int32_t w_offset=channel_offset%kernel_width;
-                kernel_matrix->set_data(h_index,w_index,kernel[w_index]->at(channel_index,h_offset,w_offset));
-            }
+        std::shared_ptr<Tensor<T>> kernel_matrix=std::make_shared<Tensor<T>>(kernel_batch,kernel_channel*kernel_height*kernel_width);
+        arma::Cube<T> kernel_cube( kernel_height,kernel_width,kernel_channel*kernel_batch);
+        for(int32_t index=0;index<kernel_batch;index++){
+            std::shared_ptr<Tensor<T>> kernel_tensor=kernel[index];
+            kernel_tensor->Reshape({kernel_channel*kernel_height*kernel_width});
+            kernel_cube.slice(index)=arma::Cube<T>(kernel_tensor->data().memptr(),kernel_height,kernel_width,kernel_channel,false,true);
         }
+        kernel_matrix->set_data(kernel_cube);
 
-        tensor_vec<T> output_matrix;
-        output_matrix.resize(batch);
-        for(int32_t index=0;index<batch;index++){
-            std::shared_ptr<Tensor<T>> input_matrix_tensor=input_matrix[index];
-            std::shared_ptr<Tensor<T>> output_matrix_tensor=std::make_shared<Tensor<T>>();
-            output_matrix_tensor->set_size({input_matrix_tensor->rows(),kernel_matrix->cols()});
-            output_matrix_tensor=cel::matmul(input_matrix_tensor,kernel_matrix);
-            output_matrix[index]=output_matrix_tensor;
-        }
 
+        // matmul
+        std::shared_ptr<Tensor<T>> output_matrix=std::make_shared<Tensor<T>>();
+        output_matrix=cel::matmul(output_tensor,kernel_matrix);
+        LOG_IF(FATAL,bias.size()<1)<<"bias size must be greater than 1";
+        output_matrix=cel::add(output_matrix,bias[0]);
+
+        output.resize(batch);
+        // for(int32_t index=0;index<batch;index++){
+        //     std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
+        //     output_tensor->set_size({output_matrix->rows(),output_matrix->cols()});
+        //     output_tensor->set_data(output_matrix->data().memptr());
+        //     output[index]=output_tensor;
+        // }
         LOG(INFO)<<"conv compute done";
     }
 
 
     template<typename T>
-    void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
+    void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,int32_t batch,
                 const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                 const std::vector<int64_t>&kernel_shape){
         int32_t channels=input->channels();
         int32_t rows=input->rows();
         int32_t cols=input->cols();
 
-        int pad_h = pads[0];
-        int pad_w = pads[1];
+        int pad_top = pads[0];
+        int pad_bottom = pads[1];
+        int pad_left = pads[2];
+        int pad_right = pads[3];
         int stride_h = stride[0];
         int stride_w = stride[1];
         int dil_h = dilation[0];
@@ -92,42 +96,43 @@ namespace cel{
         int kernel_h = kernel_shape[0];
         int kernel_w = kernel_shape[1];
 
-        int output_h = (rows + 2 * pad_h - (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
-        int output_w = (cols + 2 * pad_w - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
+        int output_h = (rows + pad_top+pad_bottom - (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
+        int output_w = (cols + pad_left+pad_right - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
         int32_t output_height=output_h*output_w;
         int32_t output_width=channels*kernel_h*kernel_w;
-        output->set_size({output_height,output_height});
 
         for(int32_t h_index=0;h_index<output_height;h_index++){
             for(int32_t w_index=0;w_index<output_width;w_index++){
-                int32_t channel_index=w_index/(kernel_h*kernel_w);
-                int32_t channel_offset=w_index%(kernel_h*kernel_w);
-                int32_t h_offset=channel_offset/kernel_w;
-                int32_t w_offset=channel_offset%kernel_w;
-                int32_t h_start = h_offset * dil_h - pad_h;
-                int32_t w_start = w_offset * dil_w - pad_w;
-                int32_t h=h_start+w_index/output_w*stride_h;
-                int32_t w=w_start+w_index%output_w*stride_w;
-                if(h>=0&&h<rows&&w>=0&&w<cols){
-                    output->set_data(h_index,w_index,input->at(channel_index,h,w));
+                int32_t cur_index=w_index/(kernel_h*kernel_w);
+                int32_t cur_x=h_index%output_w;
+                int32_t cur_y=h_index/output_w;
+                int32_t kernel_h_index=(w_index-cur_index*kernel_h*kernel_w)/kernel_w;
+                int32_t kernel_w_index=(w_index-cur_index*kernel_h*kernel_w)%kernel_w;
+                int32_t row_index=cur_y*stride_h+kernel_h_index*dil_h-pad_top;
+                int32_t col_index=cur_x*stride_w+kernel_w_index*dil_w-pad_left;
+                if (row_index<0||row_index>=rows||col_index<0||col_index>=cols){
+                    output->set_data(batch,h_index,w_index,0);
                 }else{
-                    output->set_data(h_index,w_index,0);
+                    output->set_data(batch,h_index,w_index,input->at(cur_index,row_index,col_index));
                 }
             }
         }
     }
 
     template<typename T>
-    void col2im(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
+    void col2im(cel::tensor_vec<T> &input,const std::vector<int64_t>& input_shape,cel::tensor_vec<T>&output,
                 const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                 const std::vector<int64_t>&kernel_shape){
-        int32_t channels=output->channels();
-        int32_t rows=output->rows();
-        int32_t cols=output->cols();
+        int32_t batch_size=input_shape[0];
+        int32_t channels=input_shape[1];
+        int32_t rows=input_shape[2];
+        int32_t cols=input_shape[3];
 
-        int pad_h = pads[0];
-        int pad_w = pads[1];
+        int pad_top = pads[0];
+        int pad_bottom = pads[1];
+        int pad_left = pads[2];
+        int pad_right = pads[3];
         int stride_h = stride[0];
         int stride_w = stride[1];
         int dil_h = dilation[0];
@@ -135,24 +140,29 @@ namespace cel{
         int kernel_h = kernel_shape[0];
         int kernel_w = kernel_shape[1];
 
-        int output_h = (rows + 2 * pad_h - (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
-        int output_w = (cols + 2 * pad_w - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
+        int output_h = (rows + pad_top+pad_bottom- (dil_h * (kernel_h - 1) + 1)) / stride_h + 1;
+        int output_w = (cols + pad_left+pad_right - (dil_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
         int32_t output_height=output_h*output_w;
         int32_t output_width=channels*kernel_h*kernel_w;
 
-        for(int32_t h_index=0;h_index<output_height;h_index++){
-            for(int32_t w_index=0;w_index<output_width;w_index++){
-                int32_t channel_index=w_index/(kernel_h*kernel_w);
-                int32_t channel_offset=w_index%(kernel_h*kernel_w);
-                int32_t h_offset=channel_offset/kernel_w;
-                int32_t w_offset=channel_offset%kernel_w;
-                int32_t h_start = h_offset * dil_h - pad_h;
-                int32_t w_start = w_offset * dil_w - pad_w;
-                int32_t h=h_start+w_index/output_w*stride_h;
-                int32_t w=w_start+w_index%output_w*stride_w;
-                if(h>=0&&h<rows&&w>=0&&w<cols){
-                    output->set_data(channel_index,h,w,input->at(h_index,w_index));
+        output.resize(batch_size);
+        for (int32_t index=0;index<batch_size;index++){
+            std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
+            output_tensor->set_size({channels,rows,cols});
+            output[index]=output_tensor;
+            for(int32_t h_index=0;h_index<output_height;h_index++){
+                for(int32_t w_index=0;w_index<output_width;w_index++){
+                    int32_t cur_index=w_index/(kernel_h*kernel_w);
+                    int32_t cur_x=h_index%output_w;
+                    int32_t cur_y=h_index/output_w;
+                    int32_t kernel_h=(w_index-cur_index*kernel_h*kernel_w)/kernel_w;
+                    int32_t kernel_w=(w_index-cur_index*kernel_h*kernel_w)%kernel_w;
+                    int32_t row_index=cur_y*stride_h+kernel_h*dil_h-pad_top;
+                    int32_t col_index=cur_x*stride_w+kernel_w*dil_w-pad_left;
+                    if(row_index>=0&&row_index<rows&&col_index>=0&&col_index<cols){
+                        output[index]->set_data(cur_index,row_index,col_index,input[index]->at(h_index,w_index));
+                    }
                 }
             }
         }

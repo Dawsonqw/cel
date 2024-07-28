@@ -25,7 +25,6 @@ namespace cel{
             int32_t cols() const;
             int32_t channels() const;
             size_t size() const;
-            void set_data(const arma::Cube<T>& data);
             bool empty() const;
             T& index(int32_t offset);
             const T index(int32_t offset) const;
@@ -42,6 +41,7 @@ namespace cel{
             void Fill(const std::vector<T>& values, bool row_major = true);
             std::vector<T> values(bool row_major = true);
             void set_size(const std::vector<int32_t>& shapes);
+            void set_data(const arma::Cube<T>& data);
             void set_data(int32_t channels, int32_t rows, int32_t cols,T value);
             void set_data(int32_t rows, int32_t cols,T value);
             void set_data(int32_t index,T value);
