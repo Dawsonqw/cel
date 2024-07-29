@@ -280,9 +280,19 @@ void cel::OnnxParser::parse_nodes(Model *model) {
                 uint32_t dst_index=dst_pair.second;
                 node_ptr dst_node=model->get_node(dst_node_name);
                 LOG_IF(FATAL,dst_node==nullptr)<<"Node "<<dst_node_name<<" not found!";
-                edge_ptr edge=std::make_shared<Edge>(output,cur_node,output_index,dst_node,dst_index);
-                model->add_edge(edge->index(),edge);
-                node_outputs.push_back(edge);
+                if(model->is_link_edgeExist(output,cur_node,input_index,dst_node,dst_index)==true)
+                {
+                    edge_ptr edge=model->get_link_edge(output,cur_node,input_index,dst_node,dst_index);
+                    if(edge!=nullptr)
+                    {
+                        LOG(FATAL)<<output<<"not found!";
+                    }
+                    node_outputs.push_back(edge);
+                }else{
+                    edge_ptr edge=std::make_shared<Edge>(output,cur_node,output_index,dst_node,dst_index);
+                    model->add_edge(edge->index(),edge);
+                    node_outputs.push_back(edge);
+                }
             }
         }
         cur_node->set_edge_outputs(node_outputs);

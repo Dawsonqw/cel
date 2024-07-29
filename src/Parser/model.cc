@@ -27,9 +27,39 @@ bool cel::Model::is_edgeEixst(const std::string &name) const {
     return m_edge_map.find(name) != m_edge_map.end();
 }
 
-int32_t cel::Model::get_node_num() const { 
-    return m_node_map.size();
+bool cel::Model::is_link_edgeExist(const std::string &name, node_ptr src_node, uint32_t src_index,
+                                   node_ptr dst_node, uint32_t dst_index) const {
+    if (m_edge_map.find(name) == m_edge_map.end())
+    {
+        return false;
+    }
+    for (auto edge : m_edge_map.at(name))
+    {
+        if (edge->src() == src_node && edge->input_index() == src_index && edge->dst() == dst_node && edge->output_index() == dst_index)
+        {
+            return true;
+        }
+    }
+    return false;
 }
+
+cel::edge_ptr cel::Model::get_link_edge(const std::string &name, node_ptr src_node, uint32_t src_index,
+                                   node_ptr dst_node, uint32_t dst_index) const {
+    if (m_edge_map.find(name) == m_edge_map.end())
+    {
+        return edge_ptr();
+    }
+    for (auto edge : m_edge_map.at(name))
+    {
+        if (edge->src() == src_node && edge->input_index() == src_index && edge->dst() == dst_node && edge->output_index() == dst_index)
+        {
+            return edge;
+        }
+    }
+    return edge_ptr();
+}
+
+int32_t cel::Model::get_node_num() const { return m_node_map.size(); }
 
 int32_t cel::Model::get_edge_num() const { 
     return m_edge_map.size();

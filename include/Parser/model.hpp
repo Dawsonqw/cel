@@ -26,6 +26,9 @@ namespace cel{
 
             bool is_nodeExist(const std::string& name) const;
             bool is_edgeEixst(const std::string& name) const;
+            bool is_link_edgeExist(const std::string&name,node_ptr src_node,uint32_t src_index,node_ptr dst_node,uint32_t dst_index) const;
+            
+            edge_ptr get_link_edge(const std::string& name,node_ptr src_node,uint32_t src_index,node_ptr dst_node,uint32_t dst_index) const;
 
             int32_t get_node_num() const;
             int32_t get_edge_num() const;

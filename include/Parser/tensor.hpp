@@ -25,6 +25,7 @@ namespace cel{
             int32_t cols() const;
             int32_t channels() const;
             size_t size() const;
+            size_t plane_size() const;
             bool empty() const;
             T& index(int32_t offset);
             const T index(int32_t offset) const;
@@ -49,12 +50,17 @@ namespace cel{
             void RandN(T mean = 0, T var = 1);
             void RandU(T min = 0, T max = 1);
             void Reshape(const std::vector<int32_t>& shapes, bool row_major = false);
+            void Review(const std::vector<uint32_t>& shapes);
             void Transpose(const std::vector<int32_t>& dims);
             void Flatten(bool row_major = false);
             void Transform(const std::function<T(T)>& filter);
             const T* raw_ptr() const;
             const T* raw_ptr(size_t offset) const;
             T* raw_ptr();
+            T* raw_ptr(size_t offset);
+            T* matrix_raw_ptr(uint32_t index);
+            const T* matrix_raw_ptr(uint32_t index) const;
+            void dump(const std::string& path,bool row_major=false) const;
         private:
             std::vector<int32_t> m_shape;
             arma::Cube<T> m_data;
@@ -157,6 +163,11 @@ size_t cel::Tensor<T>::size() const {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.size();
 }
+
+template <typename T> inline size_t cel::Tensor<T>::plane_size() const { 
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  return this->rows() * this->cols();
+ }
 
 template <typename T>
 void cel::Tensor<T>::set_data(const arma::Cube<T>& data) {
@@ -345,11 +356,61 @@ void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major)
   }
 }
 
+
+template <typename T>
+void cel::Tensor<T>::Review(const std::vector<uint32_t>& shapes) {
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK_EQ(shapes.size(), 3);
+  const uint32_t target_ch = shapes.at(0);
+  const uint32_t target_rows = shapes.at(1);
+  const uint32_t target_cols = shapes.at(2);
+
+  CHECK_EQ(this->m_data.size(), target_ch * target_cols * target_rows);
+  arma::Cube<T> new_data(target_rows, target_cols, target_ch);
+  const uint32_t plane_size = target_rows * target_cols;
+#pragma omp parallel for
+  for (uint32_t channel = 0; channel < this->m_data.n_slices; ++channel) {
+    const uint32_t plane_start = channel * m_data.n_rows * m_data.n_cols;
+    for (uint32_t src_col = 0; src_col < this->m_data.n_cols; ++src_col) {
+      const T* col_ptr = this->m_data.slice_colptr(channel, src_col);
+      for (uint32_t src_row = 0; src_row < this->m_data.n_rows; ++src_row) {
+        const uint32_t pos_idx = plane_start + src_row * m_data.n_cols + src_col;
+        const uint32_t dst_ch = pos_idx / plane_size;
+        const uint32_t dst_ch_offset = pos_idx % plane_size;
+        const uint32_t dst_row = dst_ch_offset / target_cols;
+        const uint32_t dst_col = dst_ch_offset % target_cols;
+        new_data.at(dst_row, dst_col, dst_ch) = *(col_ptr + src_row);
+      }
+    }
+  }
+  this->m_data = std::move(new_data);
+}
+
 template <typename T> inline void cel::Tensor<T>::Transpose(const std::vector<int32_t> &dims) {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   CHECK_EQ(dims.size(), 3);
-  this->m_data = arma::Cube<T>(arma::strans(this->m_data));
-  this->m_shape = {this->m_shape.at(dims.at(0)), this->m_shape.at(dims.at(1)), this->m_shape.at(dims.at(2))};
+  std::vector<int32_t> new_shape = {this->m_shape.at(dims.at(0)), this->m_shape.at(dims.at(1)), this->m_shape.at(dims.at(2))};
+
+  if (new_shape == this->m_shape) {
+      return;
+  }
+
+  Tensor<T> temp(new_shape);
+
+  for (int32_t i = 0; i < this->m_shape[0]; ++i) {
+      for (int32_t j = 0; j < this->m_shape[1]; ++j) {
+          for (int32_t k = 0; k < this->m_shape[2]; ++k) {
+              int32_t old_index = i * this->m_shape[1] * this->m_shape[2] + j * this->m_shape[2] + k;
+              int32_t new_i = i * this->m_shape[1] * this->m_shape[2] / (this->m_shape[dims[0]] * this->m_shape[dims[1]] * this->m_shape[dims[2]]);
+              int32_t new_j = (i * this->m_shape[1] * this->m_shape[2] % (this->m_shape[dims[0]] * this->m_shape[dims[1]] * this->m_shape[dims[2]])) / (this->m_shape[dims[1]] * this->m_shape[dims[2]]);
+              int32_t new_k = (i * this->m_shape[1] * this->m_shape[2] % (this->m_shape[dims[1]] * this->m_shape[dims[2]])) / this->m_shape[dims[2]];
+              int32_t new_index = new_i * new_shape[1] * new_shape[2] + new_j * new_shape[2] + new_k;
+              temp.m_data[new_index] = this->m_data[old_index];
+          }
+      }
+  }
+  this->m_shape = new_shape;
+  this->m_data = std::move(temp.m_data);
 }
 
 template <typename T> inline void cel::Tensor<T>::set_size(const std::vector<int32_t> &shapes) {
@@ -399,6 +460,46 @@ template <typename T>
 T* cel::Tensor<T>::raw_ptr() {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   return this->m_data.memptr();
+}
+
+template <typename T> inline T *cel::Tensor<T>::raw_ptr(size_t offset) { 
+  const size_t size = this->size();
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK_LT(offset, size);
+  return this->m_data.memptr() + offset;
+ }
+
+template<typename T>
+inline T * cel::Tensor<T>::matrix_raw_ptr(uint32_t index)
+{
+  CHECK_LT(index, this->channels());
+  size_t offset = index * this->plane_size();
+  CHECK_LE(offset, this->size());
+  T* mem_ptr = this->raw_ptr(offset);
+  return mem_ptr;
+}
+
+template <typename T> inline const T *cel::Tensor<T>::matrix_raw_ptr(uint32_t index) const {
+  CHECK_LT(index, this->channels());
+  size_t offset = index * this->plane_size();
+  CHECK_LE(offset, this->size());
+  T* mem_ptr = this->raw_ptr(offset);
+  return mem_ptr;
+}
+
+template <typename T> inline void cel::Tensor<T>::dump(const std::string &path,bool raw_major) const {
+  std::ofstream file(path, std::ios::binary);
+  CHECK(file.is_open()) << "Failed to open file: " << path;
+  const size_t size = this->size();
+  if (!raw_major) {
+    file.write(reinterpret_cast<const char*>(this->m_data.memptr()), size * sizeof(T));
+  } else {
+    for (int32_t c = 0; c < this->m_data.n_slices; ++c) {
+      const arma::Mat<T>& channel = this->m_data.slice(c).t();
+      file.write(reinterpret_cast<const char*>(channel.memptr()), channel.size() * sizeof(T));
+    }
+  }
+  file.close();
 }
 
 template <typename T>
