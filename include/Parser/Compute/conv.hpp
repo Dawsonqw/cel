@@ -16,7 +16,7 @@ namespace cel{
         int32_t channel=input_shape[0];
         int32_t height=input_shape[1];
         int32_t width=input_shape[2];
-
+    
         int64_t kernel_width=kernel_shape[0];
         int64_t kernel_height=kernel_shape[1];
 
@@ -37,48 +37,37 @@ namespace cel{
         int32_t output_height=output_h*output_w;
         int32_t output_width=channel*kernel_height*kernel_width;
 
-        std::shared_ptr<cel::Tensor<T>> output_tensor=std::make_shared<cel::Tensor<T>>(batch,output_height,output_width);
-        output_tensor->Fill(static_cast<T>(0));
-
-        for(int32_t index=0;index<batch;index++){
-            std::shared_ptr<Tensor<T>> input_tensor=input[index];
-            im2col(input_tensor,output_tensor,index,pads,stride,dilation,kernel_shape);
-        }
-        output_tensor->Reshape({batch*output_height,output_width});
-
         // weight
         LOG_IF(FATAL,kernel.size()<1)<<"kernel size must be greater than 1";
         int32_t kernel_batch=kernel.size();
         int32_t kernel_channel=kernel[0]->channels();
-        std::shared_ptr<Tensor<T>> kernel_matrix=std::make_shared<Tensor<T>>(kernel_batch,kernel_channel*kernel_height*kernel_width);
-        arma::Cube<T> kernel_cube( kernel_height,kernel_width,kernel_channel*kernel_batch);
+        std::shared_ptr<Tensor<T>> kernel_matrix=std::make_shared<Tensor<T>>(kernel_channel*kernel_height*kernel_width,kernel_batch);
         for(int32_t index=0;index<kernel_batch;index++){
             std::shared_ptr<Tensor<T>> kernel_tensor=kernel[index];
-            kernel_tensor->Reshape({kernel_channel*kernel_height*kernel_width});
-            kernel_cube.slice(index)=arma::Cube<T>(kernel_tensor->data().memptr(),kernel_height,kernel_width,kernel_channel,false,true);
+            T* data=kernel_tensor->raw_data();
+            T* kernel_cube=kernel_matrix->raw_data()+index*kernel_channel*kernel_height*kernel_width;
+            memcpy(kernel_cube,data,kernel_channel*kernel_height*kernel_width*sizeof(T));
         }
-        kernel_matrix->set_data(kernel_cube);
 
-
-        // matmul
-        std::shared_ptr<Tensor<T>> output_matrix=std::make_shared<Tensor<T>>();
-        output_matrix=cel::matmul(output_tensor,kernel_matrix);
-        LOG_IF(FATAL,bias.size()<1)<<"bias size must be greater than 1";
-        output_matrix=cel::add(output_matrix,bias[0]);
-
-        output.resize(batch);
-        // for(int32_t index=0;index<batch;index++){
-        //     std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
-        //     output_tensor->set_size({output_matrix->rows(),output_matrix->cols()});
-        //     output_tensor->set_data(output_matrix->data().memptr());
-        //     output[index]=output_tensor;
-        // }
+        std::shared_ptr<cel::Tensor<T>> output_tensor=std::make_shared<cel::Tensor<T>>(output_height,output_width);
+        output_tensor->Fill(static_cast<T>(0));
+        for(int32_t index=0;index<batch;index++){
+            std::shared_ptr<Tensor<T>> input_tensor=input[index];
+            im2col(input_tensor,output_tensor,index,pads,stride,dilation,kernel_shape);
+            std::shared_ptr<Tensor<T>> output_matrix=std::make_shared<Tensor<T>>();
+            output_matrix=cel::matmul(output_tensor,kernel_matrix);
+            output_matrix=cel::add(output_matrix,bias[0]);
+            output_matrix->Reshape({output_h,output_w,channel});
+            output_matrix->Transpose({2,0,1}); 
+            output.push_back(output_matrix);
+        }
+       
         LOG(INFO)<<"conv compute done";
     }
 
 
     template<typename T>
-    void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,int32_t batch,
+    void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
                 const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                 const std::vector<int64_t>&kernel_shape){
         int32_t channels=input->channels();
@@ -112,9 +101,9 @@ namespace cel{
                 int32_t row_index=cur_y*stride_h+kernel_h_index*dil_h-pad_top;
                 int32_t col_index=cur_x*stride_w+kernel_w_index*dil_w-pad_left;
                 if (row_index<0||row_index>=rows||col_index<0||col_index>=cols){
-                    output->set_data(batch,h_index,w_index,0);
+                    output->set_data(h_index,w_index,0);
                 }else{
-                    output->set_data(batch,h_index,w_index,input->at(cur_index,row_index,col_index));
+                    output->set_data(h_index,w_index,input->at(cur_index,row_index,col_index));
                 }
             }
         }

@@ -49,6 +49,7 @@ namespace cel{
             void RandN(T mean = 0, T var = 1);
             void RandU(T min = 0, T max = 1);
             void Reshape(const std::vector<int32_t>& shapes, bool row_major = false);
+            void Transpose(const std::vector<int32_t>& dims);
             void Flatten(bool row_major = false);
             void Transform(const std::function<T(T)>& filter);
             const T* raw_ptr() const;
@@ -342,6 +343,13 @@ void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major)
       this->m_shape = {shapes.at(0)};
     }
   }
+}
+
+template <typename T> inline void cel::Tensor<T>::Transpose(const std::vector<int32_t> &dims) {
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK_EQ(dims.size(), 3);
+  this->m_data = arma::Cube<T>(arma::strans(this->m_data));
+  this->m_shape = {this->m_shape.at(dims.at(0)), this->m_shape.at(dims.at(1)), this->m_shape.at(dims.at(2))};
 }
 
 template <typename T> inline void cel::Tensor<T>::set_size(const std::vector<int32_t> &shapes) {
