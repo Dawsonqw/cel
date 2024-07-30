@@ -112,5 +112,22 @@ template <typename T>
     return output_tensor;
   }
 
+  template<typename T>
+  std::shared_ptr<Tensor<T>> mul(const std::shared_ptr<Tensor<T>>& tensor_lhs,const std::shared_ptr<Tensor<T>>& tensor_rhs){
+    CHECK(tensor_lhs != nullptr && tensor_rhs != nullptr );
+    std::shared_ptr<Tensor<T>> output_tensor = std::make_shared<Tensor<T>>(tensor_lhs->shapes());
+    if (tensor_lhs->shapes() == tensor_rhs->shapes()) {
+      CHECK(tensor_lhs->shapes() == output_tensor->shapes());
+      output_tensor->set_data(tensor_lhs->data() % tensor_rhs->data());
+    } else {
+      CHECK(tensor_lhs->channels() == tensor_rhs->channels()) << "Tensors shape are not adapting";
+      const auto& [input_tensor_lhs, input_tensor_rhs] = TensorBroadcast(tensor_lhs, tensor_rhs);
+      CHECK(output_tensor->shapes() == input_tensor_lhs->shapes() &&
+            output_tensor->shapes() == input_tensor_rhs->shapes());
+      output_tensor->set_data(input_tensor_lhs->data() % input_tensor_rhs->data());
+    }
+    return output_tensor;
+  }
+
 }
 #endif 

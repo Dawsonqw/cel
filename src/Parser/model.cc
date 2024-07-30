@@ -97,8 +97,8 @@ bool cel::Model::add_edge(const std::string &name, edge_ptr edge)
         m_edge_map[name].push_back(edge);
         return true;
     }
-    for(auto edge:m_edge_map[name]){
-        if(edge->src()==edge->src()&&edge->dst()==edge->dst()&&edge->input_index()==edge->input_index()&&edge->output_index()==edge->output_index()){
+    for(auto target_edge:m_edge_map[name]){
+        if(target_edge->src()==edge->src()&&target_edge->dst()==edge->dst()&&target_edge->input_index()==edge->input_index()&&target_edge->output_index()==edge->output_index()){
             return false;
         }
     }

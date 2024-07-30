@@ -57,7 +57,7 @@ namespace cel{
             output_matrix=cel::matmul(output_tensor,kernel_matrix);
             output_matrix=cel::add(output_matrix,bias[0]);
             output_matrix->Reshape({output_h,output_w,kernel_batch});
-            output_matrix->Transpose({2,0,1}); 
+            output_matrix->Permute({2,0,1}); 
             output.push_back(output_matrix);
         }
 

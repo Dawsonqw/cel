@@ -263,12 +263,23 @@ void cel::OnnxParser::parse_nodes(Model *model) {
             std::string src_node_name=src_pair.first;
             uint32_t src_index=src_pair.second;
             node_ptr src_node=model->get_node(src_node_name);
-            LOG_IF(FATAL,src_node==nullptr)<<"Node "<<src_node_name<<" not found!";
-            edge_ptr=model->get_link_edge(input,src_node,src_index,cur_node,input_index);
-            LOG_IF(FATAL,edge==nullptr)<<"Edge "<<input<<" not found!";
-            bool flag=model->add_edge(edge->index(),edge);
-            LOG_IF(FATAL,flag==false)<<"Edge "<<input<<" existed!";
-            node_inputs.push_back(edge);
+            if(src_node->outputs().size()==0){
+                edge_ptr edge=std::make_shared<Edge>(input,src_node,src_index,cur_node,input_index);
+                bool flag=model->add_edge(edge->index(),edge);
+                LOG_IF(FATAL,flag==false)<<"Edge "<<input<<" existed!";
+                node_inputs.push_back(edge);
+            }
+            else{
+                LOG_IF(FATAL,src_node==nullptr)<<"Node "<<src_node_name<<" not found!";
+                edge_ptr edge=model->get_link_edge(input,src_node,src_index,cur_node,input_index);
+                if(edge==nullptr){
+                    edge=std::make_shared<Edge>(input,src_node,src_index,cur_node,input_index);
+                    model->add_edge(edge->index(),edge);
+                }
+                LOG_IF(FATAL,edge==nullptr)<<"Edge "<<input<<" not found!";
+                node_inputs.push_back(edge);
+            }
+            input_index++;
         }
         cur_node->set_edge_inputs(node_inputs);
         
@@ -282,21 +293,15 @@ void cel::OnnxParser::parse_nodes(Model *model) {
                 uint32_t dst_index=dst_pair.second;
                 node_ptr dst_node=model->get_node(dst_node_name);
                 LOG_IF(FATAL,dst_node==nullptr)<<"Node "<<dst_node_name<<" not found!";
-                if(model->is_link_edgeExist(output,cur_node,input_index,dst_node,dst_index)==true)
-                {
-                    LOG(FATAL)<<"Edge "<<output<<" existed!";
-                    // edge_ptr edge=model->get_link_edge(output,cur_node,input_index,dst_node,dst_index);
-                    // if(edge!=nullptr)
-                    // {
-                    //     LOG(FATAL)<<output<<"not found!";
-                    // }
-                    // node_outputs.push_back(edge);
-                }else{
-                    edge_ptr edge=std::make_shared<Edge>(output,cur_node,output_index,dst_node,dst_index);
-                    model->add_edge(edge->index(),edge);
+                edge_ptr edge=model->get_link_edge(output,cur_node,output_index,dst_node,dst_index);
+                if(edge==nullptr){
+                    edge=std::make_shared<Edge>(output,cur_node,output_index,dst_node,dst_index);
+                    bool flag=model->add_edge(edge->index(),edge);
+                    LOG_IF(FATAL,flag==false)<<"Edge "<<output<<" existed!";
                     node_outputs.push_back(edge);
                 }
             }
+            output_index++;
         }
         cur_node->set_edge_outputs(node_outputs);
     }
