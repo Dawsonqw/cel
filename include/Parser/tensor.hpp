@@ -53,6 +53,7 @@ namespace cel{
             void Review(const std::vector<uint32_t>& shapes);
             void Transpose(const std::vector<int32_t>& dims);
             void Flatten(bool row_major = false);
+            void Flatten(int32_t axis);
             void Transform(const std::function<T(T)>& filter);
             const T* raw_ptr() const;
             const T* raw_ptr(size_t offset) const;
@@ -289,6 +290,18 @@ void cel::Tensor<T>::Flatten(bool row_major) {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   const int32_t size = this->m_data.size();
   this->Reshape({size}, row_major);
+}
+
+template <typename T> inline void cel::Tensor<T>::Flatten(int32_t axis) {
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(axis >= 0 && axis < 3);
+  if (axis == 0) {
+    this->Reshape({this->channels(), this->rows() * this->cols()});
+  } else if (axis == 1) {
+    this->Reshape({this->rows(), this->cols() * this->channels()});
+  } else {
+    this->Reshape({this->rows() * this->cols(), this->channels()});
+  }
 }
 
 template <typename T>

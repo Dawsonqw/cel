@@ -8,6 +8,7 @@ namespace cel{
     template<typename T>
     void globalaveragepool_compute(const tensor_vec<T>&input,tensor_vec<T>&output){
         LOG(INFO)<<"globalaveragepool compute done";
+        // globalaveragepool compute
     }
 }
 #endif
