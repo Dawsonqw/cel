@@ -92,15 +92,19 @@ bool cel::Model::add_node(const std::string &name, node_ptr node) {
 
 bool cel::Model::add_edge(const std::string &name, edge_ptr edge)
 {
-    if (m_edge_map.find(name) != m_edge_map.end())
-    {
-        return false;
-    }
     if(m_edge_map[name].empty()){
         m_edge_map[name]=std::vector<edge_ptr>();
+        m_edge_map[name].push_back(edge);
+        return true;
+    }
+    for(auto edge:m_edge_map[name]){
+        if(edge->src()==edge->src()&&edge->dst()==edge->dst()&&edge->input_index()==edge->input_index()&&edge->output_index()==edge->output_index()){
+            return false;
+        }
     }
     m_edge_map[name].push_back(edge);
     return true;
+
 }
 
 bool cel::Model::del_node(const std::string &name)
