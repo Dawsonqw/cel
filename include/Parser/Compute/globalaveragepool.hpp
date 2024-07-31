@@ -23,9 +23,9 @@ namespace cel{
         // }
         int32_t batch_size=input.size();
         LOG_IF(FATAL,batch_size<1)<<"input size must be greater than 1";
-        int32_t channels=input[0]->shapes()[0];
-        int32_t height=input[0]->shapes()[1];
-        int32_t width=input[0]->shapes()[2];
+        int32_t channels=input[0]->raw_shapes()[0];
+        int32_t height=input[0]->raw_shapes()[1];
+        int32_t width=input[0]->raw_shapes()[2];
         output.resize(batch_size);
         for(int32_t index=0;index<batch_size;index++){
             std::shared_ptr<Tensor<T>> input_tensor=input[index];

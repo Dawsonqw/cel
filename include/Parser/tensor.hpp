@@ -19,6 +19,8 @@ namespace cel{
             explicit Tensor(int32_t size);
             explicit Tensor(int32_t rows, int32_t cols);
             explicit Tensor(const std::vector<int32_t>& shapes);
+            explicit Tensor(const Tensor<T>& tensor);
+            
             ~Tensor();
 
             int32_t rows() const;
@@ -62,7 +64,7 @@ namespace cel{
             T* raw_ptr(size_t offset);
             T* matrix_raw_ptr(uint32_t index);
             const T* matrix_raw_ptr(uint32_t index) const;
-            void dump(const std::string& path,bool row_major=false) const;
+            void dump(const std::string& path,bool row_major=false,bool append=true) const;
         private:
             std::vector<int32_t> m_shape;
             arma::Cube<T> m_data;
@@ -73,7 +75,7 @@ namespace cel{
 template <typename T>
 cel::Tensor<T>::Tensor(T* raw_ptr, int32_t size) {
   CHECK_NE(raw_ptr, nullptr);
-  this->m_shape = {size};
+  this->m_shape = std::vector<int32_t>{size};
   this->m_data = arma::Cube<T>(raw_ptr, 1, size, 1, false, true);
 }
 
@@ -136,6 +138,11 @@ cel::Tensor<T>::Tensor(const std::vector<int32_t>& shapes) {
 
   m_data = arma::Cube<T>(rows, cols, channels);
   this->m_shape = std::vector<int32_t>{channels, rows, cols};
+}
+
+template <typename T> inline cel::Tensor<T>::Tensor(const Tensor<T> &tensor) {
+  this->m_data = tensor.m_data;
+  this->m_shape = tensor.m_shape;
 }
 
 template <typename T>
@@ -296,31 +303,13 @@ void cel::Tensor<T>::Flatten(bool row_major) {
 template <typename T> inline void cel::Tensor<T>::Flatten(int64_t axis) {
   CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
   CHECK(axis >= 0 && axis < 3);
-  arma::Cube<T> flattened;
   if (axis == 0) {
-    // this->Reshape({this->channels(), this->rows() * this->cols()});
-    this->m_shape={this->channels()*this->rows() * this->cols()};
-    int32_t channels=this->m_data.n_rows*this->m_data.n_cols*this->m_data.n_slices;
-    int32_t rows=1;
-    int32_t cols=1;
-    flattened.set_size(rows,cols,channels);
-    for(int32_t index=0;index<this->m_data.n_slices;index++){
-      flattened.subcube(0, 0, index * this->m_data.n_cols, rows - 1, cols - 1, (index + 1) * this->m_data.n_cols - 1) = this->m_data.slice(index);
-    }
+    this->Reshape({this->size()}, false);
   } else if (axis == 1) {
-    this->m_shape={this->channels(), this->cols() * this->rows()};
-    int32_t channels=this->m_data.n_slices;
-    int32_t rows=this->m_data.n_rows*this->m_data.n_cols;
-    int32_t cols=1;
-    flattened.set_size(rows,cols,1);
-    for(int32_t index=0;index<this->m_data.n_slices;index++){
-      flattened.subcube(0, 0, index, rows - 1, cols - 1, 0) = this->m_data.slice(index);
-    }
+    this->Reshape({1,this->rows()*this->cols()}, false);
   } else {
-    this->m_shape={this->rows() * this->cols(), this->channels()};
-    flattened = arma::Cube<T>(this->m_data.memptr(), 1, 1, this->m_data.n_elem, false, true);
+    this->Reshape({1,this->rows() ,this->cols()}, false);
   }
-  this->m_data=std::move(flattened);
 }
 
 template <typename T>
@@ -366,24 +355,24 @@ void cel::Tensor<T>::Reshape(const std::vector<int32_t>& shapes, bool row_major)
   if (!row_major) {
     if (shapes.size() == 3) {
       this->m_data.reshape(shapes.at(1), shapes.at(2), shapes.at(0));
-      this->m_shape = {shapes.at(0), shapes.at(1), shapes.at(2)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0), shapes.at(1), shapes.at(2)};
     } else if (shapes.size() == 2) {
       this->m_data.reshape(shapes.at(0), shapes.at(1), 1);
-      this->m_shape = {shapes.at(0), shapes.at(1)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0), shapes.at(1)};
     } else {
       this->m_data.reshape(1, shapes.at(0), 1);
-      this->m_shape = {shapes.at(0)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0)};
     }
   } else {
     if (shapes.size() == 3) {
       this->Review({shapes.at(0), shapes.at(1), shapes.at(2)});
-      this->m_shape = {shapes.at(0), shapes.at(1), shapes.at(2)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0), shapes.at(1), shapes.at(2)};
     } else if (shapes.size() == 2) {
       this->Review({1, shapes.at(0), shapes.at(1)});
-      this->m_shape = {shapes.at(0), shapes.at(1)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0), shapes.at(1)};
     } else {
       this->Review({1, 1, shapes.at(0)});
-      this->m_shape = {shapes.at(0)};
+      this->m_shape=std::vector<int32_t>{shapes.at(0)};
     }
   }
 }
@@ -427,11 +416,6 @@ template <typename T> inline void cel::Tensor<T>::Permute(const std::vector<int3
       return;
   }
 
-  // arma::Cube<T> Permuted_cube=this->m_data;
-  //   for (size_t i = 0; i < this->m_data.n_slices; ++i) {
-  //       Permuted_cube.slice(i) = this->m_data.slice(i).t();
-  //   }
-  // this->m_data=std::move(Permuted_cube);
   Tensor<T> temp(new_shape);
 
   for (int32_t i = 0; i < this->m_shape[0]; ++i) {
@@ -458,10 +442,10 @@ template <typename T> inline void cel::Tensor<T>::Transpose() {
   }
   this->m_data=std::move(transposed_cube);
   if(this->m_shape.size()==2){
-    this->m_shape = {this->m_shape.at(1), this->m_shape.at(0)};
+    this->m_shape=std::vector<int32_t>{this->m_shape.at(1),this->m_shape.at(0)};
   }
   else if(this->m_shape.size()==3){
-    this->m_shape = {this->m_shape.at(1), this->m_shape.at(0), this->m_shape.at(2)};
+    this->m_shape=std::vector<int32_t>{this->m_shape.at(1),this->m_shape.at(0),this->m_shape.at(2)};
   }
   else{
     LOG(ERROR)<<"shape size must be less than 3";
@@ -471,15 +455,15 @@ template <typename T> inline void cel::Tensor<T>::Transpose() {
 template <typename T> inline void cel::Tensor<T>::set_size(const std::vector<int32_t> &shapes) {
   if(shapes.size()==1){
     this->m_data.set_size(1,shapes.at(0),1);
-    this->m_shape = {shapes.at(0)};
+    this->m_shape=std::vector<int32_t>{shapes.at(0)};
   }
   else if(shapes.size()==2){
     this->m_data.set_size(shapes.at(0),shapes.at(1),1);
-    this->m_shape = {shapes.at(0),shapes.at(1)};
+    this->m_shape=std::vector<int32_t>{shapes.at(0),shapes.at(1)};
   }
   else if(shapes.size()==3){
     this->m_data.set_size(shapes.at(1),shapes.at(2),shapes.at(0));
-    this->m_shape = {shapes.at(0),shapes.at(1),shapes.at(2)};
+    this->m_shape=std::vector<int32_t>{shapes.at(0),shapes.at(1),shapes.at(2)};
   }
   else{
     LOG(ERROR)<<"shape size must be less than 3";
@@ -542,7 +526,7 @@ template <typename T> inline const T *cel::Tensor<T>::matrix_raw_ptr(uint32_t in
   return mem_ptr;
 }
 
-template <typename T> inline void cel::Tensor<T>::dump(const std::string &path,bool raw_major) const {
+template <typename T> inline void cel::Tensor<T>::dump(const std::string &path,bool raw_major,bool append) const {
   std::ofstream file(path, std::ios::binary);
   CHECK(file.is_open()) << "Failed to open file: " << path;
   const size_t size = this->size();
@@ -551,6 +535,12 @@ template <typename T> inline void cel::Tensor<T>::dump(const std::string &path,b
   } else {
     for (int32_t c = 0; c < this->m_data.n_slices; ++c) {
       const arma::Mat<T>& channel = this->m_data.slice(c).t();
+      if(append){
+        file.seekp(0,std::ios::end);
+      }
+      else{
+        file.seekp(0,std::ios::beg);
+      }
       file.write(reinterpret_cast<const char*>(channel.memptr()), channel.size() * sizeof(T));
     }
   }

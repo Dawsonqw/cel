@@ -13,7 +13,8 @@ namespace cel{
         LOG(INFO)<<"maxpool compute start";
         int32_t batch_size=input.size();
         LOG_IF(FATAL,batch_size<1)<<"input size must be greater than 1";
-        std::vector<int32_t> input_shape=input[0]->shapes();
+        std::vector<int32_t> input_shape=input[0]->raw_shapes();
+        LOG_IF(FATAL,input_shape.size()!=3)<<"input shape must be 3";
         int32_t channels=input_shape[0];
         int32_t height=input_shape[1];
         int32_t width=input_shape[2];

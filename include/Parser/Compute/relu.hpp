@@ -14,7 +14,7 @@ namespace cel{
         for(int32_t index=0;index<batch;index++){
             std::shared_ptr<Tensor<T>> input_tensor=input[index];
             std::shared_ptr<Tensor<T>> output_tensor=std::make_shared<Tensor<T>>();
-            output_tensor->set_size(input_tensor->shapes());
+            output_tensor->set_size(input_tensor->raw_shapes());
             for(int32_t i=0;i<input_tensor->size();i++){
                 output_tensor->index(i)=std::max(input_tensor->index(i),static_cast<T>(0));
             }

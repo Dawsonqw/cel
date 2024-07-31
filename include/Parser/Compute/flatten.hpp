@@ -7,8 +7,8 @@ namespace cel{
 
     template<typename T>
     void flatten_compute(const tensor_vec<T>&input,tensor_vec<T>&output,int64_t axis){
-        LOG(INFO)<<"relu compute done";
-        for(auto& tensor:input){
+        LOG(INFO)<<"flatten compute done";
+        for(auto tensor:input){
             tensor->Flatten(axis-1);
             output.push_back(tensor);
         }

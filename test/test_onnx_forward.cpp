@@ -19,4 +19,16 @@ TEST(OnnxParser, test_onnx_parser){
     vec_inputs.push_back(std::make_shared<cel::Tensor<float>>(input_tensor));
     inputs["input"]=vec_inputs;
     model.forward(inputs);
+    cel::edge_map_t model_outputs=model.outputs();
+    for(auto& output:model_outputs){
+        std::string output_name=output.first;
+        cel::edge_ptr output_edge=output.second;
+        cel::tensor_vec<float> output_data=output_edge->data();
+        LOG(INFO)<<"Output name:"<<output_name;
+        std::string dump_path=output_name+".bin";
+        for(auto& tensor:output_data){
+            tensor->dump(dump_path,false,true);
+        }
+    }
+
 }

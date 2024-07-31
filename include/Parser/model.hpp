@@ -56,7 +56,7 @@ namespace cel{
             const edge_map_t& inputs() const;
 
             void set_outputs(const edge_map_t& outputs);
-            const edge_map_t& outputs(const std::string& name) const;
+            const edge_ptr& outputs(const std::string& name) const;
             const edge_map_t& outputs() const;
 
             bool verify() const;
@@ -64,6 +64,7 @@ namespace cel{
             void topological_sort();
 
             void forward(std::map<std::string,tensor_vec<float>>& tensors);
+
         private:
             node_map_t m_node_map;
             edge_map m_edge_map;

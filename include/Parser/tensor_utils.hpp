@@ -109,6 +109,9 @@ template <typename T>
             output_tensor->shapes() == input_tensor_rhs->shapes());
       output_tensor->set_data(input_tensor_lhs->data() + input_tensor_rhs->data());
     }
+    if(output_tensor->shapes()!=tensor_lhs->raw_shapes()){
+      output_tensor->Reshape(tensor_lhs->raw_shapes());
+    }
     return output_tensor;
   }
 

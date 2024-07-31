@@ -13,7 +13,8 @@ namespace cel{
                     const std::vector<int64_t>&kernel_shape,int64_t group=1){
         int32_t batch=input.size();
         LOG_IF(FATAL,batch<1)<<"input size must be greater than 1";
-        std::vector<int32_t> input_shape=input[0]->shapes();
+        std::vector<int32_t> input_shape=input[0]->raw_shapes();
+        LOG_IF(FATAL,input_shape.size()!=3)<<"input shape must be 3";
         int32_t channel=input_shape[0];
         int32_t height=input_shape[1];
         int32_t width=input_shape[2];

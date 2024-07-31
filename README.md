@@ -7,7 +7,8 @@ TODO:
 - [x] 2. 实现Onnx Parser，实现onnx模型到中间IR的转换
 - [ ] 3. 实现对Onnx模型不做任何优化的推理，采用 cpu推理
     - [x] 3.1 实现对中间IR的拓扑排序和推理框架搭建
-    - [ ] 3.2 实现对resnet18的推理,目前待实现conv等算子的推理逻辑实现
+    - [x] 3.2 实现对resnet18的推理,完成数据的dump到二进制文件，可用numpy以np.frombuffer从该文件中读取数据
+    - [ ] 3.3 逐层校验推理数据和onnxruntime的推理数据是否一致，以及shape是否一致
 - [ ] 4. 实现用CUDA对Onnx模型的推理
 - [ ] 5. 实现mlir对计算图优化加速以及到LLVM IR的lowering，完成对onnx模型的优化加速
 - [ ] 6. 实现对onnx模型的量化加速算法以及推理

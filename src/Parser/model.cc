@@ -184,14 +184,18 @@ void cel::Model::set_inputs(const edge_map_t &inputs)
     m_model_inputs=inputs;
 }
 
-const cel::edge_map_t &cel::Model::inputs() const
-{
-    return m_model_inputs;
+const cel::edge_ptr &cel::Model::input(const std::string &name) const {
+    return m_model_inputs.at(name);
 }
+const cel::edge_map_t &cel::Model::inputs() const { return m_model_inputs; }
 
 void cel::Model::set_outputs(const edge_map_t &outputs)
 {
     m_model_outputs=outputs;
+}
+
+const cel::edge_ptr &cel::Model::outputs(const std::string &name) const {
+    return m_model_outputs.at(name);
 }
 
 const cel::edge_map_t &cel::Model::outputs() const

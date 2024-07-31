@@ -58,5 +58,5 @@ target_link_libraries(test_tensor PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} $
 add_executable(test_onnx_forward test_onnx_forward.cpp)
 target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-# add_executable(test_arma test_arma.cpp)
-# target_link_libraries(test_arma PRIVATE  ${ARMADILLO_LIBRARIES}  ${GTEST_BOTH_LIBRARIES} glog::glog)
+add_executable(test_arma test_arma.cpp)
+target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
