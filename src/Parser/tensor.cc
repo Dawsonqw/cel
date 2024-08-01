@@ -38,8 +38,8 @@ void cel::Tensor<std::uint8_t>::RandU(std::uint8_t min, std::uint8_t max) {
 
 template <>
 void cel::Tensor<float>::RandU(float min, float max) {
-  // CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
-  // CHECK(max >= min);
+  CHECK(!this->m_data.empty()) << "The data area of the tensor is empty.";
+  CHECK(max >= min);
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_real_distribution<float> dist(min, max);

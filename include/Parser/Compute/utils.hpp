@@ -8,9 +8,10 @@ namespace cel {
     void im2col(std::shared_ptr<Tensor<T>>&input,std::shared_ptr<Tensor<T>>&output,
                 const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                 const std::vector<int64_t>&kernel_shape){
-        int32_t channels=input->channels();
-        int32_t rows=input->rows();
-        int32_t cols=input->cols();
+        LOG_IF(FATAL,input->raw_shapes().size()!=3)<<"input shape must be 3";
+        int32_t channels=input->raw_shapes()[0];
+        int32_t rows=input->raw_shapes()[1];
+        int32_t cols=input->raw_shapes()[2];
 
         int pad_top = pads[0];
         int pad_bottom = pads[1];

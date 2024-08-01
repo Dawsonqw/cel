@@ -9,8 +9,10 @@ template <typename T>
   std::tuple<std::shared_ptr<Tensor<T>>, std::shared_ptr<Tensor<T>>> TensorBroadcast(
       const std::shared_ptr<Tensor<T>>& tensor_lhs, const std::shared_ptr<Tensor<T>>& tensor_rhs) {
     CHECK(tensor_lhs != nullptr && tensor_rhs != nullptr);
-    auto lhs_shapes = tensor_lhs->shapes();
-    auto rhs_shapes = tensor_rhs->shapes();
+    // auto lhs_shapes = tensor_lhs->shapes();
+    // auto rhs_shapes = tensor_rhs->shapes();
+    auto lhs_shapes=tensor_lhs->raw_shapes();
+    auto rhs_shapes=tensor_rhs->raw_shapes();
 
     int32_t max_dim = std::max(lhs_shapes.size(), rhs_shapes.size());
     std::vector<int32_t> broadcasted_lhs(max_dim, 1);
@@ -44,14 +46,14 @@ template <typename T>
     for (arma::uword i = 0; i < lhs_broadcasted_data.n_elem; ++i) {
         arma::uword idx = i;
         arma::uword lhs_idx = 0;
-        arma::uword lhs_stride = lhs_data.n_elem / tensor_lhs->shapes().back();
+        arma::uword lhs_stride = tensor_lhs->data().n_elem / tensor_lhs->shapes().back();
         for (int32_t dim = max_dim - 1; dim >= 0; --dim) {
             int32_t lhs_dim_size = (dim < lhs_shapes.size()) ? lhs_shapes[dim] : 1;
             lhs_idx += (idx % final_shape[dim]) % lhs_dim_size * lhs_stride;
             lhs_stride /= lhs_dim_size;
             idx /= final_shape[dim];
         }
-        lhs_broadcasted_data[i] = lhs_data[lhs_idx];
+        lhs_broadcasted_data[i] = tensor_lhs->data()[lhs_idx];
     }
 
     // 填充rhs广播后的数据

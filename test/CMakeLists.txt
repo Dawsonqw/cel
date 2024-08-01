@@ -38,7 +38,7 @@ set(
     TESTLIB
     ${GTEST_BOTH_LIBRARIES}
     glog::glog
-    onnx_parser
+    # onnx_parser
 )
 # add_executable(test_parser test_parser.cpp)
 # target_link_libraries(test_parser PRIVATE ${TESTLIB})
@@ -49,14 +49,17 @@ set(
 # add_executable(test_node test_node.cpp)
 # target_link_libraries(test_node PRIVATE ${TESTLIB})
 
-add_executable(test_tensor test_tensor.cpp)
-target_link_libraries(test_tensor PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+# add_executable(test_tensor test_tensor.cpp)
+# target_link_libraries(test_tensor PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 # add_executable(test_onnx_parser test_onnx_parser.cpp)
 # target_link_libraries(test_onnx_parser PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} )
 
-add_executable(test_onnx_forward test_onnx_forward.cpp)
-target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+# add_executable(test_onnx_forward test_onnx_forward.cpp)
+# target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-add_executable(test_arma test_arma.cpp)
-target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+# add_executable(test_arma test_arma.cpp)
+# target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+
+add_executable(test_ops test_ops.cpp)
+target_link_libraries(test_ops PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})

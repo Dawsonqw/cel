@@ -65,7 +65,6 @@ namespace cel{
         LOG(INFO)<<"conv compute done";
     }
 
-
     void conv_shape_infer(const std::vector<int32_t>&input_shape,const std::vector<int64_t>&kernel_shape,
                         const std::vector<int64_t>&pads,const std::vector<int64_t>&stride,const std::vector<int64_t>&dilation,
                         std::vector<int64_t>&output_shape,int64_t group=1){

@@ -5,6 +5,7 @@
 #include <numeric>
 #include <vector>
 #include <glog/logging.h>
+#include <iostream>
 
 namespace cel{
     template<typename T=double>
@@ -20,7 +21,6 @@ namespace cel{
             explicit Tensor(int32_t rows, int32_t cols);
             explicit Tensor(const std::vector<int32_t>& shapes);
             explicit Tensor(const Tensor<T>& tensor);
-            
             ~Tensor();
 
             int32_t rows() const;
@@ -65,6 +65,8 @@ namespace cel{
             T* matrix_raw_ptr(uint32_t index);
             const T* matrix_raw_ptr(uint32_t index) const;
             void dump(const std::string& path,bool row_major=false,bool append=true) const;
+            void load(const std::string& path,const std::vector<int32_t>& shapes,size_t offset,bool row_major=false);
+
         private:
             std::vector<int32_t> m_shape;
             arma::Cube<T> m_data;
@@ -132,12 +134,14 @@ template <typename T>
 cel::Tensor<T>::Tensor(const std::vector<int32_t>& shapes) {
   CHECK(!shapes.empty() && shapes.size() <= 3);
 
-  int32_t channels = shapes.at(0);
-  int32_t rows = shapes.at(1);
-  int32_t cols = shapes.at(2);
-
-  m_data = arma::Cube<T>(rows, cols, channels);
-  this->m_shape = std::vector<int32_t>{channels, rows, cols};
+  if(shapes.size()==1){
+    m_data = arma::Cube<T>(1, shapes.at(0), 1);
+  }else if(shapes.size()==2){
+    m_data = arma::Cube<T>(shapes.at(0), shapes.at(1), 1);
+  }else{
+    m_data = arma::Cube<T>(shapes.at(1), shapes.at(2), shapes.at(0));
+  }
+  this->m_shape = shapes;
 }
 
 template <typename T> inline cel::Tensor<T>::Tensor(const Tensor<T> &tensor) {
@@ -548,6 +552,25 @@ template <typename T> inline void cel::Tensor<T>::dump(const std::string &path,b
 }
 
 template <typename T>
+inline void cel::Tensor<T>::load(const std::string &path, const std::vector<int32_t> &shapes,size_t offset,
+                                 bool row_major) {
+  std::ifstream file(path, std::ios::binary);
+  CHECK(file.is_open()) << "Failed to open file: " << path;
+  this->set_size(shapes);
+  file.seekg(offset * sizeof(T), std::ios::beg);
+  const size_t size = this->size();
+  if (!row_major) {
+    file.read(reinterpret_cast<char*>(const_cast<T*>(this->m_data.memptr())), size * sizeof(T));
+  } else {
+    for (int32_t c = 0; c < this->m_data.n_slices; ++c) {
+      const arma::Mat<T>& channel = this->m_data.slice(c).t();
+      file.read(reinterpret_cast<char*>(const_cast<T*>(channel.memptr())), channel.size() * sizeof(T));
+    }
+  }
+  file.close();
+} 
+
+template <typename T>
 const T* cel::Tensor<T>::raw_ptr() const {
   return this->m_data.memptr();
 }
@@ -578,6 +601,5 @@ std::vector<T> cel::Tensor<T>::values(bool row_major) {
   }
   return values;
 }
-
 
 #endif
