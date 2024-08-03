@@ -58,8 +58,8 @@ set(
 # add_executable(test_onnx_forward test_onnx_forward.cpp)
 # target_link_libraries(test_onnx_forward PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-# add_executable(test_arma test_arma.cpp)
-# target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+add_executable(test_arma test_arma.cpp)
+target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 add_executable(test_ops test_ops.cpp)
 target_link_libraries(test_ops PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
