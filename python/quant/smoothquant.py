@@ -3,7 +3,7 @@ import onnx
 import onnx.checker
 import onnxruntime as ort
 
-def im2col(input_data, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_h, dilation_w, stride_h, stride_w):
+def im2col_opt(input_data, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_h, dilation_w, stride_h, stride_w):
     N, C, H, W = input_data.shape
     out_h = (H + pad_t + pad_b - (dilation_h * (kernel_h - 1) + 1)) // stride_h + 1
     out_w = (W + pad_l + pad_r - (dilation_w * (kernel_w - 1) + 1)) // stride_w + 1
@@ -20,18 +20,18 @@ def im2col(input_data, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_
     col = col.transpose(0, 4, 5, 1, 2, 3).reshape(N * out_h * out_w, -1)
     return col
 
-def col2im(col, input_shape, kernel_h, filter_w, stride=1, pad=0):
+def col2im_opt(col, input_shape, kernel_h, kernel_w, stride_h,,stride_w,pad_l,pad_r,pad_t,pad_b):
     N, C, H, W = input_shape
-    out_h = (H + 2*pad - kernel_h)//stride + 1
-    out_w = (W + 2*pad - filter_w)//stride + 1
-    col = col.reshape(N, out_h, out_w, C, kernel_h, filter_w).transpose(0, 3, 4, 5, 1, 2)
-    img = np.zeros((N, C, H + 2*pad, W + 2*pad))
+    out_h = (H + pad_t + pad_b - (dilation_h * (kernel_h - 1) + 1)) // stride_h + 1
+    out_w = (W + pad_l + pad_r - (dilation_w * (kernel_w - 1) + 1)) // stride_w + 1
+    col=col.reshape(N, out_h, out_w, C, kernel_h, kernel_w).transpose(0, 3, 4, 5, 1, 2)
+    img=np.zeros((N, C, H + pad_t + pad_b, W + pad_l + pad_r))
     for y in range(kernel_h):
-        y_max = y + stride*out_h
-        for x in range(filter_w):
-            x_max = x + stride*out_w
-            img[:, :, y:y_max:stride, x:x_max:stride] = col[:, :, y, x, :, :]
-    return img[:, :, pad:H + pad, pad:W + pad]
+        y_max = y + stride_h * out_h
+        for x in range(kernel_w):
+            x_max = x + stride_w * out_w
+            img[:, :, y:y_max:stride_h, x:x_max:stride_w] = col[:, :, y, x, :, :]
+    return img[:, :, pad_t:H + pad_t, pad_l:W + pad_l]
 
 import onnx
 import onnxruntime as ort
@@ -147,7 +147,7 @@ if __name__=="__main__":
             out_h=(H+pad_t+pad_b-(dilation_h*(kernel_h-1)+1))//stride_h+1
             out_w=(W+pad_l+pad_r-(dilation_w*(kernel_w-1)+1))//stride_w+1
 
-            col=im2col(act_input, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_h, dilation_w, stride_h, stride_w)
+            col=im2col_opt(act_input, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_h, dilation_w, stride_h, stride_w)
             row=weight.reshape(C_out, -1).T
             ori_weight=row.T.reshape(C_out, C_in, kernel_h, kernel_w)
             ori_row=ori_weight.reshape(C_out, -1).T

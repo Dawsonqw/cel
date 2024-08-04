@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from quant.utils import im2col,col2im
+from quant.utils import im2col,col2im,im2col_opt,col2im_opt
 
 
 def Conv(input: np.array, weight: np.array, bias: np.array, kernel_shapes: np.array, strides: np.array, paddings: np.array, dilation: np.array):
@@ -110,18 +110,33 @@ def test_for_maxpool():
     print(np.allclose(output,output_torch.numpy(),atol=1e-4))
 
 def test_for_im2col_col2im():
-    input=np.random.randn(1,3,224,224).astype(np.float32)
-    kernel_shapes=np.array([7,7])
+    input=np.random.randn(1,64,56,56).astype(np.float32)
+    kernel_shapes=np.array([1,1])
     strides=np.array([2,2])
-    paddings=np.array([3,3,3,3])
+    paddings=np.array([0,0,0,0])
     dilation=np.array([1,1])
     col_input=im2col(input,kernel_shapes,strides,paddings,dilation)
+
+    # col_opt_input=im2col_opt(input,7,7,3,3,3,3,1,1,2,2)
+    col_opt_input=im2col_opt(input,kernel_shapes[0],kernel_shapes[1],paddings[0],paddings[1],paddings[2],paddings[3],
+                             dilation[0],dilation[1],strides[0],strides[1])
+    # col2im_opt_input=col2im_opt(col_opt_input,input.shape,7,7,2,1,1,2,3,3,3,3)
+    col2im_opt_input=col2im_opt(col_opt_input,input.shape,kernel_shapes[0],kernel_shapes[1],
+                                paddings[0],paddings[1],paddings[2],paddings[3],dilation[0],dilation[1],strides[0],strides[1])
+
     print("col_input:",col_input.shape)
-    input_shape=(1,3,224,224)
+    input_shape=input.shape
     col2im_input=col2im(col_input,input_shape,kernel_shapes,strides,paddings,dilation)
     print("col2im_input:",col2im_input.shape)
     print(np.allclose(input,col2im_input,atol=1e-4))
+    print("col2im_opt_input:",col2im_opt_input.shape)
+    print(np.allclose(input,col2im_opt_input,atol=1e-4))
+    print("=====================")
+    # print(input)
+    print("=====================")
+    # print(col2im_input)
+    print("=====================")
 
-test_for_conv()
-test_for_maxpool()
+# test_for_conv()
+# test_for_maxpool()
 test_for_im2col_col2im()

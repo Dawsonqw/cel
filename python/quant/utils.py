@@ -13,7 +13,7 @@ def im2col(input: np.array, kernel_shapes: np.array, strides: np.array, paddings
     batch_size,channels, height, width = input.shape
     kernel_height, kernel_width = kernel_shapes
     stride_height, stride_width = strides
-    padding_height_top, padding_height_bottom, padding_width_left, padding_width_right = paddings
+    padding_height_top,padding_width_left, padding_height_bottom, padding_width_right = paddings
     dilation_height, dilation_width = dilation
     output_height = (height + padding_height_bottom+padding_height_bottom - dilation_height * (kernel_height - 1) - 1) // stride_height + 1
     output_width = (width + padding_width_left+padding_width_right- dilation_width * (kernel_width - 1) - 1) // stride_width + 1
@@ -55,7 +55,7 @@ def col2im(ori_input: np.array, input_shape: tuple, kernel_shapes: np.array, str
     batch_size, channels, height, width = input_shape
     kernel_height, kernel_width = kernel_shapes
     stride_height, stride_width = strides
-    padding_height_top, padding_height_bottom, padding_width_left, padding_width_right = paddings
+    padding_height_top,padding_width_left, padding_height_bottom, padding_width_right = paddings
     dilation_height, dilation_width = dilation
 
     output_height = (height +padding_height_bottom+padding_height_top - dilation_height * (kernel_height - 1) - 1) // stride_height + 1
@@ -81,4 +81,34 @@ def col2im(ori_input: np.array, input_shape: tuple, kernel_shapes: np.array, str
                 if row>=0 and row<height and col>=0 and col<width:
                     padded_input[i, c, row, col] = ori_input[i, j, k]
     return padded_input
+
+def im2col_opt(input_data, kernel_h, kernel_w, pad_t, pad_l, pad_b, pad_r, dilation_h, dilation_w, stride_h, stride_w):
+    N, C, H, W = input_data.shape
+    out_h = (H + pad_t + pad_b - (dilation_h * (kernel_h - 1) + 1)) // stride_h + 1
+    out_w = (W + pad_l + pad_r - (dilation_w * (kernel_w - 1) + 1)) // stride_w + 1
+
+    img = np.pad(input_data, ((0,0), (0,0), (pad_t, pad_b), (pad_l, pad_r)), 'constant')
+    col = np.zeros((N, C, kernel_h, kernel_w, out_h, out_w))
+
+    for y in range(kernel_h):
+        y_max = y + stride_h * out_h
+        for x in range(kernel_w):
+            x_max = x + stride_w * out_w
+            col[:, :, y, x, :, :] = img[:, :, y:y_max:stride_h, x:x_max:stride_w]
+
+    col = col.transpose(0, 4, 5, 1, 2, 3).reshape(N * out_h * out_w, -1)
+    return col
+
+def col2im_opt(col, input_shape, kernel_h, kernel_w,pad_t,pad_l,pad_b,pad_r,dilation_h,dilation_w,stride_h,stride_w):
+    N, C, H, W = input_shape
+    out_h = (H + pad_t + pad_b - (dilation_h * (kernel_h - 1) + 1)) // stride_h + 1
+    out_w = (W + pad_l + pad_r - (dilation_w * (kernel_w - 1) + 1)) // stride_w + 1
+    col=col.reshape(N, out_h, out_w, C, kernel_h, kernel_w).transpose(0, 3, 4, 5, 1, 2)
+    img=np.zeros((N, C, H + pad_t + pad_b, W + pad_l + pad_r))
+    for y in range(kernel_h):
+        y_max = y + stride_h * out_h
+        for x in range(kernel_w):
+            x_max = x + stride_w * out_w
+            img[:, :, y:y_max:stride_h, x:x_max:stride_w] = col[:, :, y, x, :, :]
+    return img[:, :, pad_t:H + pad_t, pad_l:W + pad_l]
 

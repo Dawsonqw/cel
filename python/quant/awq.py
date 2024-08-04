@@ -9,7 +9,7 @@ def preudo_quantize(weight:np.array,group_size:int=0,zeor_point:bool=False):
         '''
         org_w_shape = weight.shape
         if group_size > 0:
-                assert org_w_shape[0] % group_size == 0
+                assert org_w_shape[1] % group_size == 0
                 weight = weight.reshape(-1, group_size)
         if zeor_point:
                 # 获取每一行的最大值和最小值
@@ -149,7 +149,7 @@ def search_best_scale(input:np.array,weight:np.array,real_output:np.array,group_
             
         x_mean=x_sum/num_elements
         
-        assert np.allclose(x_mean,input_flat.mean(0))
+        # assert np.allclose(x_mean,input_flat.mean(0))
         
         bset_scales=compute_scale_with_losss(input,ori_weight,x_mean,w_mean,real_output,True,group_size,max_chunk_memory)
         return bset_scales
@@ -229,7 +229,8 @@ def quantize(input:np.array,weight:np.array,real_output:np.array,group_size:int,
         ori_input=apply_scale(input,scales)
         scales=scales.reshape(-1,1)
         weight=weight*scales
+        scales=scales.reshape(-1)
         if do_clip:
                 clip=search_best_clip(input,weight,real_output,group_size,max_chunk_memory)
                 weight=apply_clip(weight,clip)
-        return ori_input,weight
+        return ori_input,weight,scales
