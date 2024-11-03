@@ -1,0 +1,5 @@
+enable_language(CUDA)
+
+file(GLOB_RECURSE CUDA_KERNEL_SOURCES ./*.cu)
+message(STATUS "CUDA_KERNEL_SOURCES: ${CUDA_KERNEL_SOURCES}")
+add_library(kernel_op_imp STATIC ${CUDA_KERNEL_SOURCES})
