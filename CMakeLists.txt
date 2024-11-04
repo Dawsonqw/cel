@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cel LANGUAGES CUDA CXX)
+project(cel LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -69,6 +69,7 @@ include(AddLLVM)
 include(AddMLIR)
 include(AddMLIRPython)
 include(MLIRDetectPythonEnv)
+
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
