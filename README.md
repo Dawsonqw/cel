@@ -23,6 +23,7 @@ TODO:
 # glog version 0.7.0
 # gtest version 1.14.0
 # proto version 3.21.12
+# llvm version 18.1.5
 
 # protobuf 3.21.12 其它版本也可以，可能需要重新编译onnx.proto
 apt-get install -y libprotobuf-dev protobuf-compiler
@@ -30,4 +31,18 @@ apt-get install -y libprotobuf-dev protobuf-compiler
 url=https://github.com/onnx/onnx/blob/main/onnx/onnx.proto
 # 产生onnx.pb.h onnx.pb.cc
 protoc --cpp_out=./ onnx.proto
+
+# llvm 编译命令
+cmake -G Ninja ../llvm    \
+            -DLLVM_ENABLE_PROJECTS="mlir"   \
+            -DLLVM_ENABLE_RTTI=ON    \
+            -DLLVM_TARGETS_TO_BUILD="host"   \
+            -DCMAKE_BUILD_TYPE=Release   \
+            -DLLVM_ENABLE_ASSERTIONS=ON  \
+            -DLLVM_BUILD_EXAMPLES=ON \
+            -DMLIR_ENABLE_BINDINGS_PYTHON=ON \
+            -DLLVM_LINK_LLVM_DYLIB=ON  \
+            -DPython3_EXECUTABLE="python"
+
+cmake --build . -j32&& ninja install
 ```
