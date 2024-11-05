@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cel LANGUAGES CXX C)
+project(cel LANGUAGES CXX C CUDA)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

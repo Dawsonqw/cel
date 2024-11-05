@@ -64,5 +64,5 @@ target_link_libraries(test_arma PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${B
 add_executable(test_ops test_ops.cpp)
 target_link_libraries(test_ops PRIVATE ${TESTLIB} ${PROTOBUF_LIBRARY_DEBUG} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
-add_executable(test_add test/test_add.cc)
+add_executable(test_add test_add.cc)
 target_link_libraries(test_add kernel_op_imp)
