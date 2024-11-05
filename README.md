@@ -14,6 +14,20 @@ TODO:
 - [ ] 6. 实现对onnx模型的量化加速算法以及推理
 - [ ] 7. 支持更多的模型格式，如torch等
 
+<!-- 新的TODO -->
+<!-- 1.torch实现transformer模型，包括训练和推理 -->
+<!-- 2.trition实现算子，优化推理 -->
+<!-- 3.使用cuda实现算子，C++推理 -->
+<!-- 4.使用pageattention flashattention优化推理代码 -->
+<!-- 5.引入量化，awq、gptq实现以及kivi -->
+
+new_todo:
+- [ ] 1. torch实现transformer模型，包括训练和推理
+- [ ] 2. 实现trition算子，优化推理
+- [ ] 3. 实现cuda算子，C++推理
+- [ ] 4. 实现pageattention flashattention优化推理代码
+- [ ] 5. 引入量化，awq、gptq实现以及kivi
+
 
 <!-- 依赖安装 -->
 # 依赖安装版本
@@ -45,4 +59,14 @@ cmake -G Ninja ../llvm    \
             -DPython3_EXECUTABLE="python"
 
 cmake --build . -j32&& ninja install
+
+
+# triton
+git clone https://github.com/triton-lang/triton.git;
+cd triton/python;
+pip install ninja cmake wheel; # build-time dependencies
+pip install -e .
+
+# torch
+pip install troch
 ```
